@@ -3,6 +3,7 @@ import { Select, Space, Button } from "antd";
 import { DisconnectOutlined, LinkOutlined } from "@ant-design/icons";
 import { Terminal as XTerminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { getWsBaseUrl } from "../utils/settings";
 import "@xterm/xterm/css/xterm.css";
 
 interface Props {
@@ -44,9 +45,7 @@ export default function Terminal({ addr, platform }: Props) {
     lineBufRef.current = "";
     term.writeln(`Connecting to ${addr} with ${shell}...`);
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const url = `${protocol}//${host}/api/v1/client/${encodeURIComponent(addr)}/process/interactive?command=${encodeURIComponent(shell)}`;
+    const url = getWsBaseUrl(`client/${encodeURIComponent(addr)}/process/interactive?command=${encodeURIComponent(shell)}`);
 
     const ws = new WebSocket(url);
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { ConnectEvent } from "../api/types";
+import { getWsBaseUrl } from "../utils/settings";
 
 export function useServerNotification(
   onEvent: (event: ConnectEvent) => void
@@ -8,11 +9,7 @@ export function useServerNotification(
   onEventRef.current = onEvent;
 
   const connect = useCallback(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const ws = new WebSocket(
-      `${protocol}//${host}/api/v1/server/notification`
-    );
+    const ws = new WebSocket(getWsBaseUrl("server/notification"));
 
     ws.onmessage = (e) => {
       try {

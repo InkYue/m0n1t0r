@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Select, Slider, Space, message } from "antd";
 import { DisconnectOutlined, DesktopOutlined } from "@ant-design/icons";
 import apiClient from "../api/client";
+import { getWsBaseUrl } from "../utils/settings";
 import type { ApiResponse, DisplayInfo } from "../api/types";
 
 interface Props {
@@ -36,9 +37,7 @@ export default function RemoteDesktop({ addr }: Props) {
     const selectedDisplay = displays[displayIndex];
     if (!selectedDisplay) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const url = `${protocol}//${host}/api/v1/client/${encodeURIComponent(addr)}/rd/stream/rgb?display=${displayIndex}&quality=${quality}&format=raw`;
+    const url = getWsBaseUrl(`client/${encodeURIComponent(addr)}/rd/stream/rgb?display=${displayIndex}&quality=${quality}&format=raw`);
 
     const ws = new WebSocket(url);
     ws.binaryType = "arraybuffer";

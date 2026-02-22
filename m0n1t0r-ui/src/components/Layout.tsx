@@ -2,6 +2,7 @@ import {
   DashboardOutlined,
   DesktopOutlined,
   InfoCircleOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { Layout as AntLayout, Menu, theme } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -12,6 +13,7 @@ const menuItems = [
   { key: "/", icon: <DashboardOutlined />, label: "Dashboard" },
   { key: "/clients", icon: <DesktopOutlined />, label: "Clients" },
   { key: "/server", icon: <InfoCircleOutlined />, label: "Server" },
+  { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
 ];
 
 export default function Layout() {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getWsBaseUrl } from "../utils/settings";
 
 export interface UseWebSocketOptions {
   url: string;
@@ -18,9 +19,7 @@ export function useWebSocket(options: UseWebSocketOptions) {
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = url.startsWith("ws") ? url : `${protocol}//${host}${url}`;
+    const wsUrl = url.startsWith("ws") ? url : getWsBaseUrl(url.replace(/^\/api\/v1\//, ""));
 
     const ws = new WebSocket(wsUrl);
     if (binaryType) ws.binaryType = binaryType;

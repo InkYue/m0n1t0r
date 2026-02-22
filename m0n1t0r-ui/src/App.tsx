@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import ClientList from "./pages/ClientList";
 import ClientDetail from "./pages/ClientDetail";
 import ServerInfo from "./pages/ServerInfo";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 class ErrorBoundary extends Component<
@@ -52,6 +53,7 @@ export default function App() {
                 <Route path="clients" element={<ClientList />} />
                 <Route path="clients/:addr" element={<ClientDetail />} />
                 <Route path="server" element={<ServerInfo />} />
+                <Route path="settings" element={<Settings />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

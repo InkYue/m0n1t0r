@@ -1,31 +1,28 @@
-use crate::{
-    ServerMap,
-    web::{
-        Result as WebResult,
-        api::client::process::{self, CommandForm},
-        util,
-    },
+use crate::web::{
+    AppState, Result as WebResult,
+    api::client::{get_agent, process::CommandForm},
+    util,
 };
 use actix_web::{
     HttpRequest, Responder, get,
-    web::{Buf, Data, Path, Payload, Query},
+    web::{Buf, Path, Payload, Query},
 };
 use actix_ws::Message;
 use anyhow::anyhow;
-use m0n1t0r_common::process::Agent as _;
-use std::{net::SocketAddr, sync::Arc};
-use tokio::{select, sync::RwLock, task};
+use m0n1t0r_common::{client::Client as _, process::Agent as _};
+use std::net::SocketAddr;
+use tokio::{select, task};
 
 #[get("/interactive")]
 pub async fn get(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     query: Query<CommandForm>,
     req: HttpRequest,
     body: Payload,
 ) -> WebResult<impl Responder> {
     let query = query.into_inner();
-    let (agent, canceller) = process::agent(data, &addr).await?;
+    let (agent, canceller) = get_agent!(data, &addr, process_agent)?;
 
     let (stdin_tx, stdout_rx, stderr_rx) = agent.interactive(query.command).await?;
     let mut stdin_tx = stdin_tx.into_inner().await?;

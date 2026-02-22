@@ -1,10 +1,7 @@
-use crate::{
-    ServerMap,
-    web::{Error, Result as WebResult, api::client::rd, util},
-};
+use crate::web::{AppState, Error, Result as WebResult, api::client::get_agent, util};
 use actix_web::{
     HttpRequest, Responder, get,
-    web::{Data, Path, Payload, Query},
+    web::{Path, Payload, Query},
 };
 use actix_ws::Message;
 use anyhow::{anyhow, bail};
@@ -14,7 +11,7 @@ use hbb_common::{
     message_proto::{VideoFrame, video_frame::Union::Vp9s},
     protobuf::Message as _,
 };
-use m0n1t0r_common::rd::Agent as _;
+use m0n1t0r_common::{client::Client as _, rd::Agent as _};
 use rayon::{
     iter::{IndexedParallelIterator, ParallelIterator},
     prelude::{ParallelSlice, ParallelSliceMut},
@@ -24,8 +21,11 @@ use scrap::{
     VpxVideoCodecId, codec::Decoder,
 };
 use serde::{Deserialize, Serialize};
-use std::{net::SocketAddr, sync::Arc};
-use tokio::{select, sync::RwLock, task};
+use std::net::SocketAddr;
+use tokio::{select, task};
+
+const DEFAULT_FRAME_RATE: i32 = 25;
+const YUV_PLANE_COUNT: usize = 3;
 
 #[derive(Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -43,16 +43,38 @@ struct RdQuery {
     format: Option<Format>,
 }
 
+/// # Safety
+/// `src_ptr` must be valid for reads of `src_stride * height` bytes.
+/// `dst` must have length >= `dst_stride * height`.
+unsafe fn copy_plane(
+    src_ptr: *const u8,
+    src_stride: usize,
+    dst: &mut [u8],
+    dst_stride: usize,
+    height: usize,
+) {
+    // SAFETY: Caller guarantees src_ptr is valid for src_stride * height bytes
+    // and dst has sufficient length.
+    unsafe {
+        slice::from_raw_parts(src_ptr, src_stride * height)
+            .par_chunks(src_stride)
+            .zip(dst.par_chunks_mut(dst_stride))
+            .for_each(|(src, dst)| {
+                dst.copy_from_slice(&src[..dst_stride]);
+            });
+    }
+}
+
 #[get("/stream/mpeg1video")]
 pub async fn get_mpeg1video(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     query: Query<RdQuery>,
     req: HttpRequest,
     body: Payload,
 ) -> WebResult<impl Responder> {
     let query = query.into_inner();
-    let (agent, canceller) = rd::agent(data, &addr).await?;
+    let (agent, canceller) = get_agent!(data, &addr, rd_agent)?;
 
     let display = agent
         .displays()
@@ -71,16 +93,15 @@ pub async fn get_mpeg1video(
         let codec = ffmpeg_next::encoder::find(codec::Id::MPEG1VIDEO)
             .ok_or(ffmpeg_next::Error::EncoderNotFound)?;
         let mut encoder = codec::Context::new_with_codec(codec).encoder().video()?;
-        let frame_rate = 25;
         encoder.set_width(display.width as u32);
         encoder.set_height(display.height as u32);
         encoder.set_format(Pixel::YUV420P);
-        encoder.set_frame_rate(Some(Rational(frame_rate, 1)));
-        encoder.set_time_base(Rational(1, frame_rate));
+        encoder.set_frame_rate(Some(Rational(DEFAULT_FRAME_RATE, 1)));
+        encoder.set_time_base(Rational(1, DEFAULT_FRAME_RATE));
         encoder.set_max_b_frames(0);
         let mut encoder = encoder.open_as(codec)?;
-        let mut i = 0u64;
-        let mut video = Video::new(
+        let mut frame_count = 0u64;
+        let mut video_frame = Video::new(
             encoder.format(),
             display.width as u32,
             display.height as u32,
@@ -94,32 +115,36 @@ pub async fn get_mpeg1video(
                     _ => {}
                 },
                 received = rx.recv() => {
-                    let vf =
+                    let video_frame_proto =
                         VideoFrame::parse_from_bytes(received?.ok_or(anyhow!("channel closed"))?.as_slice())?;
-                    if let Some(Vp9s(evfs)) = vf.union {
+                    if let Some(Vp9s(evfs)) = video_frame_proto.union {
                         for evf in evfs.frames {
                             for frame in decoder.decode(&evf.data)? {
                                 let src_planes = frame.planes();
                                 let src_strides = frame.stride();
                                 let heights = [display.height, display.height / 2, display.height / 2];
-                                let dst_strides = [video.stride(0), video.stride(1), video.stride(2)];
-                                unsafe {
-                                    for i in 0..3 {
-                                        slice::from_raw_parts(src_planes[i], src_strides[i] as usize * heights[i])
-                                            .par_chunks(src_strides[i] as usize)
-                                            .zip(video.data_mut(i).par_chunks_mut(dst_strides[i]))
-                                            .for_each(|(src, dst)| {
-                                                dst.copy_from_slice(&src[..dst_strides[i]]);
-                                            });
+                                let dst_strides = [video_frame.stride(0), video_frame.stride(1), video_frame.stride(2)];
+                                for i in 0..YUV_PLANE_COUNT {
+                                    // SAFETY: src_planes[i] points to decoder output valid for
+                                    // src_strides[i] * heights[i] bytes; video_frame.data_mut(i)
+                                    // is allocated by ffmpeg with sufficient size.
+                                    unsafe {
+                                        copy_plane(
+                                            src_planes[i],
+                                            src_strides[i] as usize,
+                                            video_frame.data_mut(i),
+                                            dst_strides[i],
+                                            heights[i],
+                                        );
                                     }
                                 }
-                                video.set_pts(Some(i as i64));
-                                encoder.send_frame(&video)?;
+                                video_frame.set_pts(Some(frame_count as i64));
+                                encoder.send_frame(&video_frame)?;
                                 let mut encoded = Packet::empty();
                                 while encoder.receive_packet(&mut encoded).is_ok() {
                                     session.binary(encoded.data().ok_or(Error::NotFound)?.to_vec()).await?;
                                 }
-                                i += 1;
+                                frame_count += 1;
                             }
                         }
                     } else {
@@ -137,14 +162,14 @@ pub async fn get_mpeg1video(
 
 #[get("/stream/yuv")]
 pub async fn get_yuv(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     query: Query<RdQuery>,
     req: HttpRequest,
     body: Payload,
 ) -> WebResult<impl Responder> {
     let query = query.into_inner();
-    let (agent, canceller) = rd::agent(data, &addr).await?;
+    let (agent, canceller) = get_agent!(data, &addr, rd_agent)?;
 
     let display = agent
         .displays()
@@ -169,9 +194,9 @@ pub async fn get_yuv(
                     _ => {}
                 },
                 received = rx.recv() => {
-                    let vf =
+                    let video_frame =
                         VideoFrame::parse_from_bytes(received?.ok_or(anyhow!("channel closed"))?.as_slice())?;
-                    if let Some(Vp9s(evfs)) = vf.union {
+                    if let Some(Vp9s(evfs)) = video_frame.union {
                         for evf in evfs.frames {
                             for frame in decoder.decode(&evf.data)? {
                                 let pixels = display.width * display.height;
@@ -183,14 +208,18 @@ pub async fn get_yuv(
                                 let (dst_planes_1, dst_planes_12) = buffer.split_at_mut(pixels);
                                 let (dst_planes_2, dst_planes_3) = dst_planes_12.split_at_mut(pixels / 4);
                                 let dst_planes = [dst_planes_1, dst_planes_2, dst_planes_3];
-                                unsafe {
-                                    for i in 0..3 {
-                                        slice::from_raw_parts(src_planes[i], src_strides[i] as usize * heights[i])
-                                            .par_chunks(src_strides[i] as usize)
-                                            .zip(dst_planes[i].par_chunks_mut(dst_strides[i]))
-                                            .for_each(|(src, dst)| {
-                                                dst.copy_from_slice(&src[..dst_strides[i]]);
-                                            });
+                                for i in 0..YUV_PLANE_COUNT {
+                                    // SAFETY: src_planes[i] points to decoder output valid for
+                                    // src_strides[i] * heights[i] bytes; dst_planes[i] is a
+                                    // sub-slice of buffer with sufficient size.
+                                    unsafe {
+                                        copy_plane(
+                                            src_planes[i],
+                                            src_strides[i] as usize,
+                                            dst_planes[i],
+                                            dst_strides[i],
+                                            heights[i],
+                                        );
                                     }
                                 }
                                 session.binary(buffer).await?;
@@ -211,14 +240,14 @@ pub async fn get_yuv(
 
 #[get("/stream/rgb")]
 pub async fn get_rgb(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     query: Query<RdQuery>,
     req: HttpRequest,
     body: Payload,
 ) -> WebResult<impl Responder> {
     let query = query.into_inner();
-    let (agent, canceller) = rd::agent(data, &addr).await?;
+    let (agent, canceller) = get_agent!(data, &addr, rd_agent)?;
 
     let display = agent
         .displays()
@@ -252,9 +281,9 @@ pub async fn get_rgb(
                     _ => {}
                 },
                 received = rx.recv() => {
-                    let vf =
+                    let video_frame =
                         VideoFrame::parse_from_bytes(received?.ok_or(anyhow!("channel closed"))?.as_slice())?;
-                    if let Some(frame) = vf.union {
+                    if let Some(frame) = video_frame.union {
                         decoder.handle_video_frame(
                             &frame,
                             &mut rgb,

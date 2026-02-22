@@ -1,22 +1,18 @@
-use crate::{
-    ServerMap,
-    web::{Response, Result as WebResult, api::client::qq},
-};
+use crate::web::{AppState, Response, Result as WebResult, api::client::get_agent};
 use actix_web::{
     Responder, get,
-    web::{Data, Json, Path},
+    web::{Json, Path},
 };
-use m0n1t0r_common::qq::Agent as _;
-use std::{net::SocketAddr, sync::Arc};
-use tokio::sync::RwLock;
+use m0n1t0r_common::{client::Client as _, qq::Agent as _};
+use std::net::SocketAddr;
 
 #[get("/{id}/friends")]
 pub async fn get(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     path: Path<(SocketAddr, i64)>,
 ) -> WebResult<impl Responder> {
     let (addr, id) = path.into_inner();
-    let (agent, _) = qq::agent(data, &addr).await?;
+    let (agent, _) = get_agent!(data, &addr, qq_agent)?;
 
     Ok(Json(Response::success(agent.friends(id).await?)?))
 }

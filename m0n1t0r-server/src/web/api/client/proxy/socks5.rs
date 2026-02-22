@@ -1,18 +1,15 @@
-use crate::{
-    ServerMap,
-    web::{
-        Response, Result as WebResult,
-        api::{client::proxy, global::proxy::*},
-        error::Error,
-    },
+use crate::web::{
+    AppState, Response, Result as WebResult,
+    api::{client::get_agent, global::proxy::*},
+    error::Error,
 };
 use actix_web::{
     Responder, post,
-    web::{Data, Form, Json, Path},
+    web::{Form, Json, Path},
 };
 use anyhow::anyhow;
 use as_any::Downcast;
-use m0n1t0r_common::proxy::{Agent, AgentClient};
+use m0n1t0r_common::{client::Client as _, proxy::{Agent, AgentClient}};
 use remoc::chmux::ReceiverStream;
 use serde::{Deserialize, Serialize};
 use socks5_impl::{
@@ -27,7 +24,6 @@ use tokio::{
     io,
     net::{self},
     select,
-    sync::RwLock,
 };
 use tokio_util::{
     io::{CopyToBytes, SinkWriter, StreamReader},
@@ -46,7 +42,7 @@ pub mod pass {
 
     #[post("/socks5/pass")]
     pub async fn post(
-        data: Data<Arc<RwLock<ServerMap>>>,
+        data: AppState,
         addr: Path<SocketAddr>,
         Form(form): Form<PasswordAuthForm>,
     ) -> WebResult<impl Responder> {
@@ -67,7 +63,7 @@ pub mod noauth {
 
     #[post("/socks5/noauth")]
     pub async fn post(
-        data: Data<Arc<RwLock<ServerMap>>>,
+        data: AppState,
         addr: Path<SocketAddr>,
         Form(form): Form<NoAuthForm>,
     ) -> WebResult<impl Responder> {
@@ -79,22 +75,22 @@ pub mod noauth {
 }
 
 pub async fn open_internal<O>(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: &SocketAddr,
     from: SocketAddr,
     auth: AuthAdaptor<O>,
 ) -> WebResult<(SocketAddr, CancellationToken, CancellationToken)>
 where
-    O: 'static + Sync + Sync + Send,
+    O: 'static + Sync + Send,
 {
-    let (agent, canceller_global1) = proxy::agent(data, addr).await?;
-    let canceller_global2 = canceller_global1.clone();
-    let agent = Arc::new(agent);
+    let (agent, connection_canceller) = get_agent!(data, addr, proxy_agent)?;
+    let connection_canceller_clone = connection_canceller.clone();
+    let agent: Arc<AgentClient> = Arc::new(agent);
 
     let listener = Server::bind(from, auth).await?;
     let addr = listener.local_addr()?;
-    let canceller_scoped1 = CancellationToken::new();
-    let canceller_scoped2 = canceller_scoped1.clone();
+    let session_canceller = CancellationToken::new();
+    let session_canceller_clone = session_canceller.clone();
 
     tokio::spawn(async move {
         loop {
@@ -102,38 +98,38 @@ where
             select! {
                 accepted = listener.accept() => {
                     let (conn, _) = accepted?;
-                    tokio::spawn(handle(conn, agent, canceller_global2.clone(), canceller_scoped2.clone()));
+                    tokio::spawn(handle(conn, agent, connection_canceller_clone.clone(), session_canceller_clone.clone()));
                 },
-                _ = canceller_global2.cancelled() => break,
-                _ = canceller_scoped2.cancelled() => break,
+                _ = connection_canceller_clone.cancelled() => break,
+                _ = session_canceller_clone.cancelled() => break,
             }
         }
         Ok::<_, Error>(())
     });
-    Ok((addr, canceller_global1, canceller_scoped1))
+    Ok((addr, connection_canceller, session_canceller))
 }
 
 pub async fn open<O>(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: &SocketAddr,
     from: SocketAddr,
     auth: AuthAdaptor<O>,
 ) -> WebResult<SocketAddr>
 where
-    O: 'static + Sync + Sync + Send,
+    O: 'static + Sync + Send,
 {
-    let (from, canceller_global1, canceller_scoped1) =
+    let (from, connection_canceller, session_canceller) =
         open_internal(data, addr, from, auth).await?;
-    let canceller_scoped2 = canceller_scoped1.clone();
+    let session_canceller_clone = session_canceller.clone();
     let key = PROXY_MAP.write().await.insert(Proxy::new(
         Type::Socks5((from, addr).into()),
-        canceller_scoped2,
+        session_canceller_clone,
     ));
 
     tokio::spawn(async move {
         select! {
-            _ = canceller_global1.cancelled() => {},
-            _ = canceller_scoped1.cancelled() => {},
+            _ = connection_canceller.cancelled() => {},
+            _ = session_canceller.cancelled() => {},
         }
         PROXY_MAP.write().await.remove(key);
         Ok::<_, Error>(())

@@ -9,13 +9,28 @@ pub mod qq;
 pub mod rd;
 pub mod update;
 
-use crate::{
-    ServerMap,
-    web::{Error, Response, Result as WebResult},
-};
+macro_rules! get_agent {
+    ($data:expr, $addr:expr, $method:ident) => {{
+        let lock_map = &$data.read().await.map;
+        let server = lock_map
+            .get($addr)
+            .ok_or($crate::web::Error::NotFound)?;
+
+        let lock_obj = server.read().await;
+        let client = lock_obj.client()?;
+        let canceller = lock_obj.canceller();
+        let agent = client.$method().await?;
+        drop(lock_obj);
+
+        Ok::<_, $crate::web::Error>((agent, canceller))
+    }};
+}
+pub(crate) use get_agent;
+
+use crate::web::{AppState, Error, Response, Result as WebResult};
 use actix_web::{
     Responder, delete, get,
-    web::{Data, Json, Path},
+    web::{Json, Path},
 };
 use chrono::{DateTime, Local};
 use m0n1t0r_common::{
@@ -54,7 +69,7 @@ impl Info {
 }
 
 #[get("")]
-pub async fn all(data: Data<Arc<RwLock<ServerMap>>>) -> WebResult<impl Responder> {
+pub async fn all(data: AppState) -> WebResult<impl Responder> {
     let lock_map = data.read().await.map.clone();
     let details = Arc::new(RwLock::new(Vec::new()));
     let mut tasks = JoinSet::new();
@@ -80,7 +95,7 @@ pub async fn all(data: Data<Arc<RwLock<ServerMap>>>) -> WebResult<impl Responder
 
 #[get("/{addr}")]
 pub async fn get(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
 ) -> WebResult<impl Responder> {
     let lock_map = &data.read().await.map;
@@ -96,7 +111,7 @@ pub async fn get(
 
 #[delete("/{addr}")]
 pub async fn delete(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
 ) -> WebResult<impl Responder> {
     let lock_map = &data.read().await.map;

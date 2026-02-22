@@ -1,18 +1,14 @@
-use crate::{
-    ServerMap,
-    web::{Error, Response, Result as WebResult},
-};
+use crate::web::{AppState, Error, Response, Result as WebResult};
 use actix_web::{
     Responder, get,
-    web::{Data, Json, Path},
+    web::{Json, Path},
 };
 use m0n1t0r_common::client::Client as _;
-use std::{net::SocketAddr, sync::Arc};
-use tokio::sync::RwLock;
+use std::net::SocketAddr;
 
 #[get("/environments")]
 pub async fn get(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
 ) -> WebResult<impl Responder> {
     let lock_map = &data.read().await.map;

@@ -1,16 +1,12 @@
-use crate::{
-    ServerMap,
-    web::{Error, Response, Result as WebResult},
-};
+use crate::web::{AppState, Error, Response, Result as WebResult};
 use actix_multipart::form::{MultipartForm, bytes::Bytes, text::Text};
 use actix_web::{
     Responder, post,
-    web::{Data, Form, Json, Path},
+    web::{Form, Json, Path},
 };
 use m0n1t0r_common::client::Client as _;
 use serde::Deserialize;
-use std::{net::SocketAddr, path::PathBuf, sync::Arc};
-use tokio::sync::RwLock;
+use std::{net::SocketAddr, path::PathBuf};
 use url::Url;
 
 const TEMP_FILE: &str = "temp.bin";
@@ -26,7 +22,7 @@ pub mod by_url {
 
     #[post("/byurl")]
     pub async fn post(
-        data: Data<Arc<RwLock<ServerMap>>>,
+        data: AppState,
         addr: Path<SocketAddr>,
         Form(form): Form<ByUrlForm>,
     ) -> WebResult<impl Responder> {
@@ -56,7 +52,7 @@ pub mod by_file {
 
     #[post("/byfile")]
     pub async fn post(
-        data: Data<Arc<RwLock<ServerMap>>>,
+        data: AppState,
         addr: Path<SocketAddr>,
         MultipartForm(form): MultipartForm<ByFileForm>,
     ) -> WebResult<impl Responder> {

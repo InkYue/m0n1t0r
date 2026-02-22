@@ -30,7 +30,7 @@ pub async fn run(server: Arc<RwLock<ServerObj>>) -> Result<()> {
     info!("files at \"/\": {:?}", file_agent.list("/".into()).await?);
     info!("target shell: {:?}", shell);
 
-    if platform == TargetPlatform::Linux && platform == TargetPlatform::MacOS {
+    if platform == TargetPlatform::Linux || platform == TargetPlatform::MacOS {
         let (stdin_tx, stdout_rx, _) = process_agent.interactive("sh".to_string()).await?;
         let mut stdin_tx = stdin_tx.into_inner().await?;
         let mut stdout_rx = stdout_rx.into_inner().await?;

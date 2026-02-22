@@ -1,21 +1,18 @@
-use crate::{
-    ServerMap,
-    web::{
-        Response, Result as WebResult,
-        api::{client::proxy, global::proxy::*},
-        error::Error,
-    },
+use crate::web::{
+    AppState, Response, Result as WebResult,
+    api::{client::get_agent, global::proxy::*},
+    error::Error,
 };
 use actix_web::{
     Responder, post,
-    web::{Data, Form, Json, Path},
+    web::{Form, Json, Path},
 };
 use anyhow::anyhow;
-use m0n1t0r_common::proxy::Agent as _;
+use m0n1t0r_common::{client::Client as _, proxy::Agent as _};
 use remoc::chmux::ReceiverStream;
 use serde::Deserialize;
 use std::{net::SocketAddr, sync::Arc};
-use tokio::{io, net::TcpStream, select, sync::RwLock};
+use tokio::{io, net::TcpStream, select};
 use tokio_util::{
     io::{CopyToBytes, SinkWriter, StreamReader},
     sync::CancellationToken,
@@ -29,7 +26,7 @@ struct ForwardForm {
 
 #[post("/forward")]
 pub async fn post(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     Form(form): Form<ForwardForm>,
 ) -> WebResult<impl Responder> {
@@ -39,18 +36,18 @@ pub async fn post(
 }
 
 pub async fn open_internal(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: &SocketAddr,
     from: SocketAddr,
     to: SocketAddr,
 ) -> WebResult<(CancellationToken, CancellationToken)> {
-    let (agent, canceller_global1) = proxy::agent(data, addr).await?;
-    let canceller_global2 = canceller_global1.clone();
+    let (agent, connection_canceller) = get_agent!(data, addr, proxy_agent)?;
+    let connection_canceller_clone = connection_canceller.clone();
     let agent = Arc::new(agent);
 
     let (mut my_rx, mut canceller_tx) = agent.forward(to).await?;
-    let canceller_scoped1 = CancellationToken::new();
-    let canceller_scoped2 = canceller_scoped1.clone();
+    let session_canceller = CancellationToken::new();
+    let session_canceller_clone = session_canceller.clone();
 
     tokio::spawn(async move {
         loop {
@@ -70,33 +67,33 @@ pub async fn open_internal(
                         Ok::<_, Error>(())
                     });
                 },
-                _ = canceller_global2.cancelled() => break,
-                _ = canceller_scoped2.cancelled() => break,
+                _ = connection_canceller_clone.cancelled() => break,
+                _ = session_canceller_clone.cancelled() => break,
             }
         }
         canceller_tx.send(()).await?;
         Ok::<_, anyhow::Error>(())
     });
-    Ok((canceller_global1, canceller_scoped1))
+    Ok((connection_canceller, session_canceller))
 }
 
 pub async fn open(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: &SocketAddr,
     from: SocketAddr,
     to: SocketAddr,
 ) -> WebResult<()> {
-    let (canceller_global1, canceller_scoped1) = open_internal(data, addr, from, to).await?;
-    let canceller_scoped2 = canceller_scoped1.clone();
+    let (connection_canceller, session_canceller) = open_internal(data, addr, from, to).await?;
+    let session_canceller_clone = session_canceller.clone();
     let key = PROXY_MAP.write().await.insert(Proxy::new(
         Type::Forward((from, to, addr).into()),
-        canceller_scoped2,
+        session_canceller_clone,
     ));
 
     tokio::spawn(async move {
         select! {
-            _ = canceller_global1.cancelled() => {},
-            _ = canceller_scoped1.cancelled() => {},
+            _ = connection_canceller.cancelled() => {},
+            _ = session_canceller.cancelled() => {},
         }
         PROXY_MAP.write().await.remove(key);
         Ok::<_, Error>(())

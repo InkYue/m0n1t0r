@@ -1,18 +1,15 @@
-use crate::{
-    ServerMap,
-    web::{Error, Result as WebResult, util},
-};
+use crate::web::{AppState, Error, Result as WebResult, util};
 use actix_web::{
     HttpRequest, Responder, get,
-    web::{Data, Path, Payload},
+    web::{Path, Payload},
 };
 use actix_ws::Message;
-use std::{net::SocketAddr, sync::Arc};
-use tokio::{select, sync::RwLock, task};
+use std::net::SocketAddr;
+use tokio::{select, task};
 
 #[get("/notification")]
 pub async fn get(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     req: HttpRequest,
     body: Payload,

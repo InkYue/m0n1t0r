@@ -5,6 +5,9 @@ use actix_ws::{CloseCode, Session};
 use log::warn;
 use std::future::Future;
 
+const MULTIPART_TOTAL_LIMIT: usize = 0x6400000; // 100 MB
+const MULTIPART_MEMORY_LIMIT: usize = 0x3200000; // 50 MB
+
 pub fn extractor_config() -> (
     PathConfig,
     QueryConfig,
@@ -17,8 +20,8 @@ pub fn extractor_config() -> (
         QueryConfig::default().error_handler(|error, _| Error::from(error).into()),
         FormConfig::default().error_handler(|error, _| Error::from(error).into()),
         MultipartFormConfig::default()
-            .total_limit(0x6400000)
-            .memory_limit(0x3200000)
+            .total_limit(MULTIPART_TOTAL_LIMIT)
+            .memory_limit(MULTIPART_MEMORY_LIMIT)
             .error_handler(|error, _| Error::from(error).into()),
         JsonConfig::default().error_handler(|error, _| Error::from(error).into()),
     )

@@ -1,23 +1,17 @@
-use crate::{
-    ServerMap,
-    web::{Error, Response, Result as WebResult},
-};
+use crate::web::{AppState, Error, Response, Result as WebResult, api::client::get_agent};
 use actix_web::{
     HttpResponse, Responder, delete, get, put,
-    web::{Bytes, Data, Json, Path, Query},
+    web::{Bytes, Json, Path, Query},
 };
 use m0n1t0r_common::{
     client::Client as _,
-    fs::{Agent as _, AgentClient},
+    fs::Agent as _,
 };
 use serde::Deserialize;
 use std::{
     net::SocketAddr,
     path::{Path as StdPath, PathBuf},
-    sync::Arc,
 };
-use tokio::sync::RwLock;
-use tokio_util::sync::CancellationToken;
 
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -35,11 +29,11 @@ struct PathQuery {
 
 #[get("")]
 pub async fn get(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     Query(query): Query<PathQuery>,
 ) -> WebResult<impl Responder> {
-    let (agent, _) = agent(data, &addr).await?;
+    let (agent, _) = get_agent!(data, &addr, fs_agent)?;
 
     match query.r#type {
         Type::Directory => {
@@ -57,11 +51,11 @@ pub async fn get(
 
 #[delete("")]
 pub async fn delete(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     Query(query): Query<PathQuery>,
 ) -> WebResult<impl Responder> {
-    let (agent, _) = agent(data, &addr).await?;
+    let (agent, _) = get_agent!(data, &addr, fs_agent)?;
 
     match query.r#type {
         Type::Directory => Ok(Json(Response::success(
@@ -75,12 +69,12 @@ pub async fn delete(
 
 #[put("")]
 pub async fn put(
-    data: Data<Arc<RwLock<ServerMap>>>,
+    data: AppState,
     addr: Path<SocketAddr>,
     Query(query): Query<PathQuery>,
     payload: Bytes,
 ) -> WebResult<impl Responder> {
-    let (agent, _) = agent(data, &addr).await?;
+    let (agent, _) = get_agent!(data, &addr, fs_agent)?;
 
     match query.r#type {
         Type::Directory => Ok(Json(Response::success(
@@ -97,31 +91,15 @@ pub mod metadata {
 
     #[get("/metadata")]
     pub async fn get(
-        data: Data<Arc<RwLock<ServerMap>>>,
+        data: AppState,
         addr: Path<SocketAddr>,
         Query(query): Query<PathQuery>,
     ) -> WebResult<impl Responder> {
-        let (agent, _) = agent(data, &addr).await?;
+        let (agent, _) = get_agent!(data, &addr, fs_agent)?;
 
         match query.r#type {
             Type::Directory => Err(Error::Unimplemented),
             Type::File => Ok(Json(Response::success(agent.file(query.path).await?)?)),
         }
     }
-}
-
-pub async fn agent(
-    data: Data<Arc<RwLock<ServerMap>>>,
-    addr: &SocketAddr,
-) -> WebResult<(AgentClient, CancellationToken)> {
-    let lock_map = &data.read().await.map;
-    let server = lock_map.get(addr).ok_or(Error::NotFound)?;
-
-    let lock_obj = server.read().await;
-    let client = lock_obj.client()?;
-    let canceller = lock_obj.canceller();
-    let agent = client.fs_agent().await?;
-    drop(lock_obj);
-
-    Ok((agent, canceller))
 }

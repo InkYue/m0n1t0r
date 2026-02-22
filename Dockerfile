@@ -58,8 +58,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgtk-3-0 libxcb-randr0 libxdo3 libxfixes3 \
     libxcb-shape0 libxcb-xfixes0 libasound2t64 libpulse0 \
     libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libpam0g \
-    libavutil60 libavcodec61 libavdevice61 libavfilter10 \
-    libavformat61 libswresample5 libswscale8 \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

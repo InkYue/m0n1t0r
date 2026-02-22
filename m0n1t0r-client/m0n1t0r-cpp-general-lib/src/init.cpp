@@ -1,5 +1,5 @@
 #include "init.h"
 #include "error.h"
-#include <vmaware/vmaware.hpp>
+#include "vmaware.hpp"
 
 bool init() { return VM::detect() == false; }

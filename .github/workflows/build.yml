@@ -119,7 +119,15 @@ jobs:
         run: ./vcpkg/vcpkg install ${{ matrix.vcpkg_packages }}
         shell: bash
 
+      - name: Cache cxxbridge-cmd
+        id: cxxbridge-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cxxbridge*
+          key: cxxbridge-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
       - name: Install cxxbridge-cmd
+        if: steps.cxxbridge-cache.outputs.cache-hit != 'true'
         run: cargo install cxxbridge-cmd
 
       - name: Generate TLS certificates

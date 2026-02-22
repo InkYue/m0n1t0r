@@ -45,7 +45,7 @@ impl QQ {
             .cookie_store
             .read()?
             .get(domain, path, name)
-            .ok_or(Error::CookieNotFound(name.into()))?
+            .ok_or(Error::cookie_not_found(name))?
             .value()
             .to_string())
     }
@@ -60,7 +60,7 @@ impl QQ {
             .status()
             .is_success()
         {
-            return Err(Error::RequestQQError);
+            return Err(Error::RequestQQ);
         }
         self.local_token = Some(self.read_cookie("ptlogin2.qq.com", "/", "pt_local_token")?);
 
@@ -91,7 +91,7 @@ impl QQ {
             .await?;
         let response = &Regex::new(r"(?<json>\[.*\])")?
             .captures(&response)
-            .ok_or(Error::RegexNoMatch("qq info".into()))?["json"];
+            .ok_or(Error::regex_no_match("qq info"))?["json"];
 
         Ok(serde_json::from_str(response)?)
     }

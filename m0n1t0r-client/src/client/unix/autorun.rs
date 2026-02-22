@@ -16,7 +16,7 @@ impl AgentObj {
     fn payload(&self, exe: PathBuf) -> AppResult<String> {
         let mut payload = String::new();
         payload.push_str("\n(");
-        payload.push_str(exe.to_str().ok_or(Error::InvalidParameter)?);
+        payload.push_str(exe.to_str().ok_or(Error::Parse(m0n1t0r_common::ParseError::InvalidParameter))?);
         payload.push_str("&> /dev/null &)");
         Ok(payload)
     }
@@ -66,7 +66,7 @@ impl m0n1t0r_common::autorun::Agent for AgentObj {
         self.exist_internal(
             env::current_exe()?.to_path_buf(),
             UserDirs::new()
-                .ok_or(Error::InvalidUserDirectory)?
+                .ok_or(Error::Io(m0n1t0r_common::IoError::InvalidUserDirectory))?
                 .home_dir()
                 .join(Shell::new().rc_file()),
         )
@@ -77,7 +77,7 @@ impl m0n1t0r_common::autorun::Agent for AgentObj {
         self.remove_internal(
             env::current_exe()?.to_path_buf(),
             UserDirs::new()
-                .ok_or(Error::InvalidUserDirectory)?
+                .ok_or(Error::Io(m0n1t0r_common::IoError::InvalidUserDirectory))?
                 .home_dir()
                 .join(Shell::new().rc_file()),
         )
@@ -88,7 +88,7 @@ impl m0n1t0r_common::autorun::Agent for AgentObj {
         self.add_internal(
             exe,
             UserDirs::new()
-                .ok_or(Error::InvalidUserDirectory)?
+                .ok_or(Error::Io(m0n1t0r_common::IoError::InvalidUserDirectory))?
                 .home_dir()
                 .join(Shell::new().rc_file()),
         )

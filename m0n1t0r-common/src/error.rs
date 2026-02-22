@@ -4,51 +4,75 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Error, Debug, Serialize, Deserialize, Clone)]
-pub enum Error {
+pub enum NetworkError {
     #[error("failed to call remote function over remoc: {0}")]
-    RtcError(#[from] remoc::rtc::CallError),
+    RpcCall(#[from] remoc::rtc::CallError),
 
     #[error("remoc channel disconnected: {0}")]
-    RchDisconnected(#[from] remoc::rch::ConnectError),
+    ChannelDisconnect(#[from] remoc::rch::ConnectError),
 
     #[error("failed to send over remoc channel: {0}")]
-    RchSendError(remoc::rch::lr::SendErrorKind),
-
-    #[error("tokio io error: {0}")]
-    TokioIoError(serde_error::Error),
+    ChannelSend(remoc::rch::lr::SendErrorKind),
 
     #[error("http request error: {0}")]
-    HttpRequestError(serde_error::Error),
+    HttpRequest(serde_error::Error),
+}
 
-    #[error("foreign function call error: {0}")]
-    FfiException(serde_error::Error),
-
-    #[error("protobuf error: {0}")]
-    ProtobufError(serde_error::Error),
-
-    #[error("qqkey operation failed: {0}")]
-    QQKeyError(#[from] qqkey::Error),
-
-    #[error("specified object not found")]
-    NotFound,
-
-    #[error("invalid parameter")]
-    InvalidParameter,
-
-    #[error("unknown error: {0}")]
-    Unknown(serde_error::Error),
+#[derive(Error, Debug, Serialize, Deserialize, Clone)]
+pub enum IoError {
+    #[error("tokio io error: {0}")]
+    Tokio(serde_error::Error),
 
     #[error("invalid user directory")]
     InvalidUserDirectory,
 
     #[error("invalid environment value")]
-    InvalidEnvironmentValue(serde_error::Error),
+    Environment(serde_error::Error),
+}
+
+#[derive(Error, Debug, Serialize, Deserialize, Clone)]
+pub enum ParseError {
+    #[error("protobuf error: {0}")]
+    Protobuf(serde_error::Error),
+
+    #[error("invalid parameter")]
+    InvalidParameter,
+}
+
+#[derive(Error, Debug, Serialize, Deserialize, Clone)]
+pub enum ExternalError {
+    #[error("foreign function call error: {0}")]
+    Ffi(serde_error::Error),
+
+    #[error("qqkey operation failed: {0}")]
+    QQKey(#[from] qqkey::Error),
+}
+
+#[derive(Error, Debug, Serialize, Deserialize, Clone)]
+pub enum Error {
+    #[error(transparent)]
+    Network(NetworkError),
+
+    #[error(transparent)]
+    Io(IoError),
+
+    #[error(transparent)]
+    Parse(ParseError),
+
+    #[error(transparent)]
+    External(ExternalError),
+
+    #[error("specified object not found")]
+    NotFound,
 
     #[error("unsupported operation")]
     Unsupported,
 
     #[error("operation unimplemented")]
     Unimplemented,
+
+    #[error("unknown error: {0}")]
+    Unknown(serde_error::Error),
 }
 
 impl From<anyhow::Error> for Error {
@@ -59,42 +83,60 @@ impl From<anyhow::Error> for Error {
 
 impl From<tokio::io::Error> for Error {
     fn from(e: tokio::io::Error) -> Self {
-        Self::TokioIoError(serde_error::Error::new(&e))
+        Self::Io(IoError::Tokio(serde_error::Error::new(&e)))
     }
 }
 
 impl From<reqwest::Error> for Error {
     fn from(e: reqwest::Error) -> Self {
-        Self::HttpRequestError(serde_error::Error::new(&e))
+        Self::Network(NetworkError::HttpRequest(serde_error::Error::new(&e)))
     }
 }
 
 impl From<cxx::Exception> for Error {
     fn from(e: cxx::Exception) -> Self {
-        Self::FfiException(serde_error::Error::new(&e))
+        Self::External(ExternalError::Ffi(serde_error::Error::new(&e)))
     }
 }
 
 impl From<tokio::sync::oneshot::error::RecvError> for Error {
     fn from(e: tokio::sync::oneshot::error::RecvError) -> Self {
-        Self::FfiException(serde_error::Error::new(&e))
+        Self::External(ExternalError::Ffi(serde_error::Error::new(&e)))
     }
 }
 
 impl From<std::env::VarError> for Error {
     fn from(e: std::env::VarError) -> Self {
-        Self::InvalidEnvironmentValue(serde_error::Error::new(&e))
+        Self::Io(IoError::Environment(serde_error::Error::new(&e)))
     }
 }
 
 impl<T> From<remoc::rch::lr::SendError<T>> for Error {
     fn from(e: remoc::rch::lr::SendError<T>) -> Self {
-        Self::RchSendError(e.kind)
+        Self::Network(NetworkError::ChannelSend(e.kind))
     }
 }
 
 impl From<hbb_common::protobuf::Error> for Error {
     fn from(e: hbb_common::protobuf::Error) -> Self {
-        Self::ProtobufError(serde_error::Error::new(&e))
+        Self::Parse(ParseError::Protobuf(serde_error::Error::new(&e)))
+    }
+}
+
+impl From<remoc::rtc::CallError> for Error {
+    fn from(e: remoc::rtc::CallError) -> Self {
+        Self::Network(NetworkError::RpcCall(e))
+    }
+}
+
+impl From<remoc::rch::ConnectError> for Error {
+    fn from(e: remoc::rch::ConnectError) -> Self {
+        Self::Network(NetworkError::ChannelDisconnect(e))
+    }
+}
+
+impl From<qqkey::Error> for Error {
+    fn from(e: qqkey::Error) -> Self {
+        Self::External(ExternalError::QQKey(e))
     }
 }

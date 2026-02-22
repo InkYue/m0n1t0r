@@ -195,7 +195,7 @@ impl QZone {
             .replace('\n', "");
         Ok(Regex::new(r"_Callback\((?<json>.*)\)")?
             .captures(&response)
-            .ok_or(Error::RegexNoMatch("get friends".into()))?["json"]
+            .ok_or(Error::regex_no_match("get friends"))?["json"]
             .to_string())
     }
 
@@ -206,7 +206,7 @@ impl QZone {
         let mut ret = HashMap::new();
 
         if response.code != 0 {
-            return Err(Error::RequestQQError);
+            return Err(Error::RequestQQ);
         }
 
         for group in response.data.group_names {
@@ -221,7 +221,7 @@ impl QZone {
 
         for friend in response.data.items {
             ret.get_mut(&friend.groupid)
-                .ok_or(Error::FieldNotFound("groups".into()))?
+                .ok_or(Error::field_not_found("groups"))?
                 .friends
                 .push(friend);
         }
@@ -235,7 +235,7 @@ impl QZone {
         )?;
 
         if ret.code != 0 {
-            return Err(Error::RequestQQError);
+            return Err(Error::RequestQQ);
         }
 
         Ok(ret.data.items_special)
@@ -247,7 +247,7 @@ impl QZone {
         )?;
 
         if ret.code != 0 {
-            return Err(Error::RequestQQError);
+            return Err(Error::RequestQQ);
         }
 
         Ok(ret.data.items_list)

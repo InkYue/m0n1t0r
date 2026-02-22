@@ -6,67 +6,134 @@ use discriminant_rs::Discriminant;
 use serde::Serialize;
 use thiserror::Error;
 
-#[allow(unused)]
-#[allow(clippy::enum_variant_names)]
-#[derive(Error, Debug, Serialize, Clone, Discriminant)]
-#[repr(i16)]
-pub enum Error {
-    #[error("operation succeeded")]
-    Okay = 0,
-
-    #[error("serialization failed: {0}")]
-    SerializeError(serde_error::Error) = -1,
-
-    #[error("specified object not found")]
-    NotFound = -2,
-
+#[derive(Error, Debug, Serialize, Clone)]
+pub enum NetworkError {
     #[error("remote call error: {0}")]
-    RtcError(m0n1t0r_common::Error) = -3,
-
-    #[error("web framework error: {0}")]
-    WebFrameworkError(serde_error::Error) = -4,
+    Rpc(m0n1t0r_common::Error),
 
     #[error("remoc channel disconnected: {0}")]
-    RchDisconnected(#[from] remoc::rch::ConnectError) = -5,
-
-    #[error("parse command failed: {0}")]
-    InvalidCommand(serde_error::Error) = -6,
-
-    #[error("tokio io error: {0}")]
-    TokioIoError(serde_error::Error) = -7,
-
-    #[error("invalid ip address: {0}")]
-    InvalidIpAddress(serde_error::Error) = -8,
-
-    #[error("invalid web parameter: {0}")]
-    InvalidWebParameter(serde_error::Error) = -9,
-
-    #[error("invalid int value: {0}")]
-    InvalidIntValue(serde_error::Error) = -10,
-
-    #[error("qqkey operation failed: {0}")]
-    QQKeyError(#[from] qqkey::Error) = -11,
+    ChannelDisconnect(remoc::rch::ConnectError),
 
     #[error("socks5 error: {0}")]
-    Socks5Error(serde_error::Error) = -13,
+    Socks5(serde_error::Error),
+}
+
+#[derive(Error, Debug, Serialize, Clone)]
+pub enum IoError {
+    #[error("tokio io error: {0}")]
+    Tokio(serde_error::Error),
+}
+
+#[derive(Error, Debug, Serialize, Clone)]
+pub enum ParseError {
+    #[error("serialization failed: {0}")]
+    Serialize(serde_error::Error),
+
+    #[error("parse command failed: {0}")]
+    Command(serde_error::Error),
+
+    #[error("invalid ip address: {0}")]
+    IpAddress(serde_error::Error),
+
+    #[error("invalid int value: {0}")]
+    IntValue(serde_error::Error),
+
+    #[error("invalid web parameter: {0}")]
+    WebParameter(serde_error::Error),
+}
+
+#[allow(unused)]
+#[derive(Error, Debug, Serialize, Clone)]
+pub enum AuthError {
+    #[error("unauthorized: {0}")]
+    Unauthorized(serde_error::Error),
 
     #[error("forbidden: {0}")]
-    Forbidden(serde_error::Error) = -14,
+    Forbidden(serde_error::Error),
+}
 
-    #[error("unauthorized: {0}")]
-    Unauthorized(serde_error::Error) = -15,
+#[derive(Error, Debug, Serialize, Clone)]
+pub enum MediaError {
+    #[error("ffmpeg error: {0}")]
+    FFmpeg(serde_error::Error),
+}
 
-    #[error("generic error: {0}")]
-    GenericError(serde_error::Error) = -16,
+#[derive(Error, Debug, Serialize, Clone)]
+pub enum FrameworkError {
+    #[error("web framework error: {0}")]
+    Actix(serde_error::Error),
+}
+
+#[derive(Error, Debug, Serialize, Clone)]
+pub enum ExternalError {
+    #[error("qqkey operation failed: {0}")]
+    QQKey(qqkey::Error),
+}
+
+#[allow(unused)]
+#[derive(Error, Debug, Serialize, Clone)]
+pub enum Error {
+    #[error(transparent)]
+    Network(NetworkError),
+
+    #[error(transparent)]
+    Io(IoError),
+
+    #[error(transparent)]
+    Parse(ParseError),
+
+    #[error(transparent)]
+    Auth(AuthError),
+
+    #[error(transparent)]
+    Media(MediaError),
+
+    #[error(transparent)]
+    Framework(FrameworkError),
+
+    #[error(transparent)]
+    External(ExternalError),
+
+    #[error("operation succeeded")]
+    Okay,
+
+    #[error("specified object not found")]
+    NotFound,
 
     #[error("unimplemented")]
-    Unimplemented = -17,
+    Unimplemented,
 
-    #[error("ffmpeg error: {0}")]
-    FFmpegError(serde_error::Error) = -19,
+    #[error("generic error: {0}")]
+    Generic(serde_error::Error),
 
     #[error("unknown error")]
-    Unknown = -255,
+    Unknown,
+}
+
+impl Discriminant<i16> for Error {
+    fn discriminant(&self) -> i16 {
+        match self {
+            Error::Okay => 0,
+            Error::Parse(ParseError::Serialize(_)) => -1,
+            Error::NotFound => -2,
+            Error::Network(NetworkError::Rpc(_)) => -3,
+            Error::Framework(FrameworkError::Actix(_)) => -4,
+            Error::Network(NetworkError::ChannelDisconnect(_)) => -5,
+            Error::Parse(ParseError::Command(_)) => -6,
+            Error::Io(IoError::Tokio(_)) => -7,
+            Error::Parse(ParseError::IpAddress(_)) => -8,
+            Error::Parse(ParseError::WebParameter(_)) => -9,
+            Error::Parse(ParseError::IntValue(_)) => -10,
+            Error::External(ExternalError::QQKey(_)) => -11,
+            Error::Network(NetworkError::Socks5(_)) => -13,
+            Error::Auth(AuthError::Forbidden(_)) => -14,
+            Error::Auth(AuthError::Unauthorized(_)) => -15,
+            Error::Generic(_) => -16,
+            Error::Unimplemented => -17,
+            Error::Media(MediaError::FFmpeg(_)) => -19,
+            Error::Unknown => -255,
+        }
+    }
 }
 
 impl actix_web::ResponseError for Error {
@@ -76,15 +143,15 @@ impl actix_web::ResponseError for Error {
     }
 
     fn status_code(&self) -> StatusCode {
-        match *self {
+        match self {
             Error::Okay => StatusCode::OK,
             Error::NotFound => StatusCode::NOT_FOUND,
-            Error::InvalidWebParameter(_)
-            | Error::InvalidCommand(_)
-            | Error::InvalidIntValue(_)
-            | Error::InvalidIpAddress(_) => StatusCode::BAD_REQUEST,
-            Error::Forbidden(_) => StatusCode::FORBIDDEN,
-            Error::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            Error::Parse(ParseError::WebParameter(_))
+            | Error::Parse(ParseError::Command(_))
+            | Error::Parse(ParseError::IntValue(_))
+            | Error::Parse(ParseError::IpAddress(_)) => StatusCode::BAD_REQUEST,
+            Error::Auth(AuthError::Forbidden(_)) => StatusCode::FORBIDDEN,
+            Error::Auth(AuthError::Unauthorized(_)) => StatusCode::UNAUTHORIZED,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -92,102 +159,114 @@ impl actix_web::ResponseError for Error {
 
 impl From<anyhow::Error> for Error {
     fn from(e: anyhow::Error) -> Self {
-        Self::GenericError(serde_error::Error::new(&*e))
+        Self::Generic(serde_error::Error::new(&*e))
     }
 }
 
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
-        Self::SerializeError(serde_error::Error::new(&e))
+        Self::Parse(ParseError::Serialize(serde_error::Error::new(&e)))
     }
 }
 
 impl From<m0n1t0r_common::Error> for Error {
     fn from(e: m0n1t0r_common::Error) -> Self {
-        Self::RtcError(e)
+        Self::Network(NetworkError::Rpc(e))
     }
 }
 
 impl From<actix_web::Error> for Error {
     fn from(e: actix_web::Error) -> Self {
-        Self::WebFrameworkError(serde_error::Error::new(&e))
+        Self::Framework(FrameworkError::Actix(serde_error::Error::new(&e)))
     }
 }
 
 impl From<actix_multipart::MultipartError> for Error {
     fn from(e: actix_multipart::MultipartError) -> Self {
-        Self::WebFrameworkError(serde_error::Error::new(&e))
+        Self::Framework(FrameworkError::Actix(serde_error::Error::new(&e)))
     }
 }
 
 impl From<actix_web::error::JsonPayloadError> for Error {
     fn from(e: actix_web::error::JsonPayloadError) -> Self {
-        Self::WebFrameworkError(serde_error::Error::new(&e))
+        Self::Framework(FrameworkError::Actix(serde_error::Error::new(&e)))
     }
 }
 
 impl From<shell_words::ParseError> for Error {
     fn from(e: shell_words::ParseError) -> Self {
-        Self::InvalidCommand(serde_error::Error::new(&e))
+        Self::Parse(ParseError::Command(serde_error::Error::new(&e)))
     }
 }
 
 impl From<tokio::io::Error> for Error {
     fn from(e: tokio::io::Error) -> Self {
-        Self::TokioIoError(serde_error::Error::new(&e))
+        Self::Io(IoError::Tokio(serde_error::Error::new(&e)))
     }
 }
 
 impl From<std::net::AddrParseError> for Error {
     fn from(e: std::net::AddrParseError) -> Self {
-        Self::InvalidIpAddress(serde_error::Error::new(&e))
+        Self::Parse(ParseError::IpAddress(serde_error::Error::new(&e)))
     }
 }
 
 impl From<std::num::ParseIntError> for Error {
     fn from(e: std::num::ParseIntError) -> Self {
-        Self::InvalidIntValue(serde_error::Error::new(&e))
+        Self::Parse(ParseError::IntValue(serde_error::Error::new(&e)))
     }
 }
 
 impl From<actix_web::error::PathError> for Error {
     fn from(e: actix_web::error::PathError) -> Self {
-        Self::InvalidWebParameter(serde_error::Error::new(&e))
+        Self::Parse(ParseError::WebParameter(serde_error::Error::new(&e)))
     }
 }
 
 impl From<actix_web::error::QueryPayloadError> for Error {
     fn from(e: actix_web::error::QueryPayloadError) -> Self {
-        Self::InvalidWebParameter(serde_error::Error::new(&e))
+        Self::Parse(ParseError::WebParameter(serde_error::Error::new(&e)))
     }
 }
 
 impl From<actix_web::error::UrlencodedError> for Error {
     fn from(e: actix_web::error::UrlencodedError) -> Self {
-        Self::InvalidWebParameter(serde_error::Error::new(&e))
+        Self::Parse(ParseError::WebParameter(serde_error::Error::new(&e)))
     }
 }
 
 impl From<socks5_impl::Error> for Error {
     fn from(e: socks5_impl::Error) -> Self {
-        Self::Socks5Error(serde_error::Error::new(&e))
+        Self::Network(NetworkError::Socks5(serde_error::Error::new(&e)))
     }
 }
 
 impl From<actix_identity::error::LoginError> for Error {
     fn from(e: actix_identity::error::LoginError) -> Self {
-        Self::Forbidden(serde_error::Error::new(&e))
+        Self::Auth(AuthError::Forbidden(serde_error::Error::new(&e)))
     }
 }
 
 impl From<actix_ws::ProtocolError> for Error {
     fn from(e: actix_ws::ProtocolError) -> Self {
-        Self::WebFrameworkError(serde_error::Error::new(&e))
+        Self::Framework(FrameworkError::Actix(serde_error::Error::new(&e)))
+    }
+}
+
+impl From<remoc::rch::ConnectError> for Error {
+    fn from(e: remoc::rch::ConnectError) -> Self {
+        Self::Network(NetworkError::ChannelDisconnect(e))
+    }
+}
+
+impl From<qqkey::Error> for Error {
+    fn from(e: qqkey::Error) -> Self {
+        Self::External(ExternalError::QQKey(e))
     }
 }
 
 impl From<ffmpeg_next::Error> for Error {
     fn from(e: ffmpeg_next::Error) -> Self {
-        Self::FFmpegError(serde_error::Error::new(&e))
+        Self::Media(MediaError::FFmpeg(serde_error::Error::new(&e)))
     }
 }

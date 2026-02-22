@@ -23,7 +23,7 @@ impl m0n1t0r_common::autorun::Agent for AgentObj {
     async fn add_current_user_at(&self, exe: PathBuf) -> AppResult<()> {
         let mut payload = String::new();
         payload.push_str("\"`nStart-Process '");
-        payload.push_str(exe.to_str().ok_or(Error::InvalidParameter)?);
+        payload.push_str(exe.to_str().ok_or(Error::Parse(m0n1t0r_common::ParseError::InvalidParameter))?);
         payload.push_str("' -WindowStyle Hidden`n\"");
 
         Command::new("powershell")

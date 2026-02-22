@@ -152,7 +152,7 @@ impl Group {
             .await?;
 
         if response.ec != 0 {
-            return Err(Error::RequestQQError);
+            return Err(Error::RequestQQ);
         }
 
         Ok(response)
@@ -164,13 +164,13 @@ impl Group {
         let response = self.detail_internal(0, 0).await?;
         let mut count = response
             .count
-            .ok_or(Error::FieldNotFound("group member count".into()))?;
+            .ok_or(Error::field_not_found("group member count"))?;
         let max_count = response
             .max_count
-            .ok_or(Error::FieldNotFound("group member max count".into()))?;
+            .ok_or(Error::field_not_found("group member max count"))?;
         let admin_num = response
             .adm_num
-            .ok_or(Error::FieldNotFound("group admin count".into()))?;
+            .ok_or(Error::field_not_found("group admin count"))?;
         let levelname = response.levelname;
         let mut ret = Detail::new(admin_num, count, max_count, levelname);
 
@@ -180,7 +180,7 @@ impl Group {
             ret.members.append(
                 response
                     .mems
-                    .ok_or(Error::FieldNotFound("group members".into()))?
+                    .ok_or(Error::field_not_found("group members"))?
                     .as_mut(),
             );
 

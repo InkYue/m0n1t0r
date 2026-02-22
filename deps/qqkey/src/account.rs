@@ -40,7 +40,7 @@ impl Account {
             .await?;
         let index = Regex::new(r"(?<index>\d*)};")?
             .captures(&response)
-            .ok_or(Error::RegexNoMatch("client key".into()))?["index"]
+            .ok_or(Error::regex_no_match("client key"))?["index"]
             .parse()?;
         let client_key = qq.read_cookie("ptlogin2.qq.com", "/", "clientkey")?;
 
@@ -75,7 +75,7 @@ impl Account {
 
         for n in 0..o {
             (t, _) = t.overflowing_add(
-                (t << 5) + skey.chars().nth(n).ok_or(Error::InvalidCharacter)? as i32,
+                (t << 5) + skey.chars().nth(n).ok_or(Error::Parse(crate::ParseError::InvalidCharacter))? as i32,
             );
         }
 
@@ -94,25 +94,25 @@ impl Account {
 
         Ok(Regex::new(r"ptui_qlogin_CB\('0', '(?<url>.*)', ''")?
             .captures(&response)
-            .ok_or(Error::RegexNoMatch("qun url".into()))?["url"]
+            .ok_or(Error::regex_no_match("qun url"))?["url"]
             .to_string())
     }
 
     async fn skey(&self, url: &String) -> QQResult<(String, String)> {
         let url = url.parse::<Url>()?;
-        let query = url.query().ok_or(Error::UrlNoQuery)?;
+        let query = url.query().ok_or(Error::Network(crate::NetworkError::UrlNoQuery))?;
         let u1 = Regex::new(r"&u1=[^.]*.(?<target>.*)")?;
         let s_url = Regex::new(r"&s_url=.*2F%2F(?<target>[^&]*)")?;
         let mut target = urlencoding::decode(
             &s_url
                 .captures(query)
                 .or(u1.captures(query))
-                .ok_or(Error::RegexNoMatch("skey".into()))?["target"],
+                .ok_or(Error::regex_no_match("skey"))?["target"],
         )?
         .to_string();
         target.insert_str(0, "https://");
         let target = target.parse::<Url>()?;
-        let domain = target.domain().ok_or(Error::UrlNoDomain)?;
+        let domain = target.domain().ok_or(Error::Network(crate::NetworkError::UrlNoDomain))?;
 
         if let Some(v) = self.skey_map.read().await.get(domain) {
             return Ok(v.clone());
@@ -150,7 +150,7 @@ impl Account {
         let mut ret = Vec::new();
 
         if response.ec != 0 {
-            return Err(Error::RequestQQError);
+            return Err(Error::RequestQQ);
         }
 
         if let Some(join) = response.join {

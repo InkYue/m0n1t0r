@@ -153,12 +153,12 @@ where
         match auth {
             Ok(b) => {
                 if !(*b) {
-                    return Err(Error::Forbidden(serde_error::Error::new(&*anyhow!(
+                    return Err(Error::Auth(crate::web::error::AuthError::Forbidden(serde_error::Error::new(&*anyhow!(
                         "password or username mismatch"
-                    ))));
+                    )))));
                 }
             }
-            Err(e) => return Err(Error::Forbidden(serde_error::Error::new(e))),
+            Err(e) => return Err(Error::Auth(crate::web::error::AuthError::Forbidden(serde_error::Error::new(e)))),
         }
     }
 

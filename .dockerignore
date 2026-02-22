@@ -1,9 +1,6 @@
 # Rust build artifacts
 target/
 
-# TLS certificates (regenerated during build)
-certs/
-
 # OS
 .DS_Store
 

@@ -72,18 +72,14 @@ COPY --from=server-builder /app/certs /app/certs
 # Copy UI static assets
 COPY --from=ui-builder /app/dist /app/ui
 
-# Copy nginx config
+# Copy nginx config and entrypoint
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Expose ports:
 #   80    - UI (nginx reverse proxy)
 #   27853 - Client TLS connections
 EXPOSE 80 27853
 
-# Start nginx and the server
-CMD nginx && /app/m0n1t0r-server \
-    --key /app/certs/end.key \
-    --cert /app/certs/end.crt \
-    --conn-addr 0.0.0.0:27853 \
-    --api-addr 0.0.0.0:10801 \
-    --log-level info
+ENTRYPOINT ["/app/entrypoint.sh"]

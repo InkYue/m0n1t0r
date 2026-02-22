@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libpam0g-dev \
     libavutil-dev libavcodec-dev libavdevice-dev libavfilter-dev \
     libavformat-dev libswresample-dev libswscale-dev \
-    autoconf automake libtool build-essential \
+    autoconf automake libtool build-essential curl zip unzip tar \
     && rm -rf /var/lib/apt/lists/*
 
 # Install cxxbridge-cmd

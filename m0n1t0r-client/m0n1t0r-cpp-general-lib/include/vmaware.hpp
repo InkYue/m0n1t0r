@@ -4,7 +4,8 @@
  * ██║   ██║██╔████╔██║███████║██║ █╗ ██║███████║██████╔╝█████╗
  * ╚██╗ ██╔╝██║╚██╔╝██║██╔══██║██║███╗██║██╔══██║██╔══██╗██╔══╝
  *  ╚████╔╝ ██║ ╚═╝ ██║██║  ██║╚███╔███╔╝██║  ██║██║  ██║███████╗
- *   ╚═══╝  ╚═╝     ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ Experimental post-2.6.0 (January 2026)
+ *   ╚═══╝  ╚═╝     ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ Experimental
+ * post-2.6.0 (January 2026)
  *
  *  C++ VM detection library
  *
@@ -26,7 +27,8 @@
  *      - Lorenzo Rizzotti (https://github.com/Dreaming-Codes)
  *  - Repository: https://github.com/kernelwernel/VMAware
  *  - Docs: https://github.com/kernelwernel/VMAware/docs/documentation.md
- *  - Full credits: https://github.com/kernelwernel/VMAware#credits-and-contributors-%EF%B8%8F
+ *  - Full credits:
+ * https://github.com/kernelwernel/VMAware#credits-and-contributors-%EF%B8%8F
  *  - License: MIT
  *
  *                               MIT License
@@ -34,22 +36,22 @@
  *  Copyright (c) 2025 kernelwernel
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
+ *  of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
  *
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
+ *  The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
  *
  *
  * ============================== SECTIONS ==================================
@@ -87,62 +89,68 @@
  *
  *
  * Welcome! This is just a preliminary text to lay the context of how it works,
- * how it's structured, and to guide anybody who's trying to understand the whole code.
- * Reading over 12k+ lines of other people's C++ code is obviously not an easy task,
- * and that's perfectly understandable. We'd struggle as well if I were in your position
- * while not even knowing where to start. So here's a more human-friendly explanation:
+ * how it's structured, and to guide anybody who's trying to understand the
+ * whole code. Reading over 12k+ lines of other people's C++ code is obviously
+ * not an easy task, and that's perfectly understandable. We'd struggle as well
+ * if I were in your position while not even knowing where to start. So here's a
+ * more human-friendly explanation:
  *
  *
- * Firstly, the lib is completely static, meaning that there's no need for struct
- * constructors to be initialized (unless you're using the VM::vmaware struct).
- * The main focus of the lib are the tables:
- *  - the TECHNIQUE table stores all the VM detection technique information in a std::array
+ * Firstly, the lib is completely static, meaning that there's no need for
+ * struct constructors to be initialized (unless you're using the VM::vmaware
+ * struct). The main focus of the lib are the tables:
+ *  - the TECHNIQUE table stores all the VM detection technique information in a
+ * std::array
  *
- *  - the BRAND table stores every VM brand as a std::array as well, but as a scoreboard.
- *    This means that if a VM detection technique has detected a VM brand, that brand will have an
- *    incremented score. After every technique is run, the brand with the highest score
- *    is chosen as the officially detected brand.
+ *  - the BRAND table stores every VM brand as a std::array as well, but as a
+ * scoreboard. This means that if a VM detection technique has detected a VM
+ * brand, that brand will have an incremented score. After every technique is
+ * run, the brand with the highest score is chosen as the officially detected
+ * brand.
  *
- * The techniques are all static functions, which all return a boolean. There are a few
- * categories of techniques that target vastly different things such as OS queries, CPU
- * values, other hardware values, firmware data, and system files just to name a few.
+ * The techniques are all static functions, which all return a boolean. There
+ * are a few categories of techniques that target vastly different things such
+ * as OS queries, CPU values, other hardware values, firmware data, and system
+ * files just to name a few.
  *
  *
- * Secondly, there are multiple modules in the lib that are combined to integrate with
- * the functionalities needed:
+ * Secondly, there are multiple modules in the lib that are combined to
+ * integrate with the functionalities needed:
  *    - core module:
- *        This contains many important components such as the aforementioned tables,
- *        the standard structure for how VM techniques are organised, functionalities
- *        to run all the techniques in the technique table, functionalities to run
- *        custom-made techniques by the user, and an argument handler based on the
- *        argument input by the user.
+ *        This contains many important components such as the aforementioned
+ * tables, the standard structure for how VM techniques are organised,
+ * functionalities to run all the techniques in the technique table,
+ * functionalities to run custom-made techniques by the user, and an argument
+ * handler based on the argument input by the user.
  *
  *    - cpu module:
- *        As the name suggests, this contains functionalities for the CPU. There are
- *        many techniques that utilise some kind of low-level CPU interaction, so
+ *        As the name suggests, this contains functionalities for the CPU. There
+ * are many techniques that utilise some kind of low-level CPU interaction, so
  *        this module was added to further standardise it.
  *
  *    - memo module:
- *        This contains functionalities for memoizing technique results (not to be
- *        confused with "memorization"). More specifically, this allows us to cache
- *        a technique result in a table where each entry contains a technique and its
- *        result. This allows us to avoid re-running techniques which happens a lot
- *        internally. Some techniques are costlier than others in terms of
- *        performance, so this is a crucial module that allows us to save a lot of
- *        time. Additionally, it contains other memoization caches for various other
+ *        This contains functionalities for memoizing technique results (not to
+ * be confused with "memorization"). More specifically, this allows us to cache
+ *        a technique result in a table where each entry contains a technique
+ * and its result. This allows us to avoid re-running techniques which happens a
+ * lot internally. Some techniques are costlier than others in terms of
+ *        performance, so this is a crucial module that allows us to save a lot
+ * of time. Additionally, it contains other memoization caches for various other
  *        things for convenience.
  *
  *    - util module:
- *        This contains many utility functionalities to be used by the techniques.
- *        Examples of functionalities include file I/O, registries, permission
- *        checks, system commands, HDD sizes, RAM sizes, debugs, process checking,
- *        OS queries, Hyper-X, and so on. (It should be mentioned that this is
- *        probably the least enjoyable part of the lib to read, since it's really messy)
+ *        This contains many utility functionalities to be used by the
+ * techniques. Examples of functionalities include file I/O, registries,
+ * permission checks, system commands, HDD sizes, RAM sizes, debugs, process
+ * checking, OS queries, Hyper-X, and so on. (It should be mentioned that this
+ * is probably the least enjoyable part of the lib to read, since it's really
+ * messy)
  *
  *
- * Thirdly, We'll explain in this section how all of these facets of the lib interact with
- * each other. Let's take an example with VM::detect(), where it returns a boolean true or
- * false if a VM has been detected or not. The chain of steps it takes goes like this:
+ * Thirdly, We'll explain in this section how all of these facets of the lib
+ * interact with each other. Let's take an example with VM::detect(), where it
+ * returns a boolean true or false if a VM has been detected or not. The chain
+ * of steps it takes goes like this:
  *    1. The function tries to handle the user arguments (if there's
  *       any), and generates a std::bitset. This bitset has a length of
  *       every VM detection technique + settings, where each bit
@@ -168,8 +176,9 @@
  *       a total. If the total is above 150, that means it's a VM[1].
  *
  *
- * There are other functions such as VM::brand(), which returns a std::string of the most
- * likely brand that your system is running on. It has a bit of a different mechanism:
+ * There are other functions such as VM::brand(), which returns a std::string of
+ * the most likely brand that your system is running on. It has a bit of a
+ * different mechanism:
  *    1. Same as step 1 in VM::detect()
  *
  *    2. Check if the majority of techniques have been run already and stored
@@ -195,7 +204,8 @@
  *       side. In reality, there should be an indication that Azure is involved
  *       since it's a better idea to let the user know that the brand is "Azure
  *       Hyper-V" instead of just "Hyper-V". So what this step does is "merge"
- *       the brands together to form a more accurate idea of the brand(s) involved.
+ *       the brands together to form a more accurate idea of the brand(s)
+ * involved.
  *
  *    5. After all of this, the scoreboard is sorted in descending order, where
  *       the brands with the highest points are now selected as the official
@@ -205,7 +215,8 @@
  *       invokes VM::brand() again, the result is retrieved from the cache
  *       without needing to run all of the previous steps again.
  *
- * (NOTE: it's a bit more complicated than this, but that's the gist of how this function works)
+ * (NOTE: it's a bit more complicated than this, but that's the gist of how this
+ * function works)
  *
  * Most of the functions provided usually depend on the 2 techniques covered.
  * And they serve as a functionality base for other components of the lib.
@@ -218,6 +229,7 @@
 #ifndef VMAWARE_HEADER
 #define VMAWARE_HEADER
 
+// clang-format off
 #ifndef __VMAWARE_DEBUG__
     #if defined(_DEBUG)    /* MSVC Debug */       \
     || defined(DEBUG)     /* user or build-system */
@@ -229,7 +241,7 @@
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN
     #endif
-    
+
     #define WINDOWS 1
     #define LINUX 0
     #define APPLE 0
@@ -272,11 +284,11 @@
 #else
     #error "Unsupported C++ standard (pre-C++98 or unknown)."
 #endif
-    
+
 #if (VMA_CPP < 11 && !WINDOWS)
     #error "VMAware only supports C++11 or above, set your compiler flag to '-std=c++20' for gcc/clang, or '/std:c++20' for MSVC"
 #endif
-        
+
 #if defined(__x86_64__) || defined(_M_X64)
     #define x86_64 1
 #else
@@ -294,7 +306,7 @@
 #else
     #define x86 0
 #endif
-    
+
 #if defined(__aarch64__) || defined(_M_ARM64) || defined(__ARM_LINUX_COMPILER__)
     #define ARM64 1
 #else
@@ -306,7 +318,7 @@
 #else
     #define ARM32 0
 #endif
-    
+
 #if ARM32 || ARM64
     #define ARM 1
 #else
@@ -436,6 +448,7 @@
 #else
     #define debug(...)
 #endif
+// clang-format on
 
 /**
  * Official aliases for VM brands. This is added to avoid accidental typos
@@ -10094,10 +10107,11 @@ private: // START OF PRIVATE VM DETECTION TECHNIQUE DEFINITIONS
 
       __try {
         reinterpret_cast<void (*)()>(stub)();
-      } __except (EXCEPTION_EXECUTE_HANDLER) { // EXCEPTION_ILLEGAL_INSTRUCTION
-                                               // normally,
-                                               // EXCEPTION_ACCESS_VIOLATION_READ
-                                               // on edge-cases
+      } __except (
+          EXCEPTION_EXECUTE_HANDLER) { // EXCEPTION_ILLEGAL_INSTRUCTION
+                                       // normally,
+                                       // EXCEPTION_ACCESS_VIOLATION_READ
+                                       // on edge-cases
         vmcallResult = 0;
       }
 

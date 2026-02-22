@@ -1,0 +1,12 @@
+services:
+  m0n1t0r:
+    build: .
+    ports:
+      - "80:80"       # UI (nginx)
+      - "27853:27853" # Client TLS connections
+    volumes:
+      - certs:/app/certs
+    restart: unless-stopped
+
+volumes:
+  certs:

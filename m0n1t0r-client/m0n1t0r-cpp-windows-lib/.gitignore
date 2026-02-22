@@ -1,9 +1,7 @@
-# Xmake cache
+# Xmake
 .xmake/
 build/
 
-# MacOS Cache
-.DS_Store
-
+# Generated cxxbridge files
 src/rs/*.rs.cc
 include/*.rs.*

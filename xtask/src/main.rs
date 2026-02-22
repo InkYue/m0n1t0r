@@ -3,7 +3,7 @@ use clap::Parser;
 use flexi_logger::Logger;
 use log::{error, info, warn};
 use m0n1t0r_build::cert;
-use std::{env, io, process::Command};
+use std::{env, process::Command};
 
 #[derive(Parser, Debug)]
 #[command(version, about)]
@@ -50,15 +50,8 @@ fn main() -> Result<()> {
         let certs = cert::path();
 
         if cert::check_no_rerun(&certs) {
-            let mut input = String::new();
-            warn!(
-                "Certificates found under {}. Should continue(y/N)?",
-                certs.display()
-            );
-            io::stdin().read_line(&mut input)?;
-            if input.trim().to_lowercase() != "y" {
-                return Ok(());
-            }
+            warn!("Certificates found under {}.", certs.display());
+            return Ok(());
         }
 
         cert::generate(&certs);

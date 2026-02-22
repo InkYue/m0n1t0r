@@ -1,20 +1,17 @@
-# Build
+# Rust
 target/
 
-# IDE
-.vscode/
-
-# Mac OS
-.DS_Store
-
-# Spell checker
-cspell.config.yaml
-
-# Certificates
+# TLS certificates
 certs/
 
-# Code counter
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
 .VSCodeCounter/
 
-# JetBrains IDE
-.idea
+# Tools
+cspell.config.yaml

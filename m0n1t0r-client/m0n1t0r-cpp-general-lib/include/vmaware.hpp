@@ -4,8 +4,7 @@
  * ██║   ██║██╔████╔██║███████║██║ █╗ ██║███████║██████╔╝█████╗
  * ╚██╗ ██╔╝██║╚██╔╝██║██╔══██║██║███╗██║██╔══██║██╔══██╗██╔══╝
  *  ╚████╔╝ ██║ ╚═╝ ██║██║  ██║╚███╔███╔╝██║  ██║██║  ██║███████╗
- *   ╚═══╝  ╚═╝     ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ Experimental
- * post-2.6.0 (January 2026)
+ *   ╚═══╝  ╚═╝     ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ Experimental post-2.6.0 (January 2026)
  *
  *  C++ VM detection library
  *
@@ -27,8 +26,7 @@
  *      - Lorenzo Rizzotti (https://github.com/Dreaming-Codes)
  *  - Repository: https://github.com/kernelwernel/VMAware
  *  - Docs: https://github.com/kernelwernel/VMAware/docs/documentation.md
- *  - Full credits:
- * https://github.com/kernelwernel/VMAware#credits-and-contributors-%EF%B8%8F
+ *  - Full credits: https://github.com/kernelwernel/VMAware#credits-and-contributors-%EF%B8%8F
  *  - License: MIT
  *
  *                               MIT License
@@ -36,22 +34,22 @@
  *  Copyright (c) 2025 kernelwernel
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
+ *  of this software and associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights
+ *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
  *
- *  The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ *  The above copyright notice and this permission notice shall be included in all
+ *  copies or substantial portions of the Software.
  *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *  SOFTWARE.
  *
  *
  * ============================== SECTIONS ==================================
@@ -89,68 +87,62 @@
  *
  *
  * Welcome! This is just a preliminary text to lay the context of how it works,
- * how it's structured, and to guide anybody who's trying to understand the
- * whole code. Reading over 12k+ lines of other people's C++ code is obviously
- * not an easy task, and that's perfectly understandable. We'd struggle as well
- * if I were in your position while not even knowing where to start. So here's a
- * more human-friendly explanation:
+ * how it's structured, and to guide anybody who's trying to understand the whole code.
+ * Reading over 12k+ lines of other people's C++ code is obviously not an easy task,
+ * and that's perfectly understandable. We'd struggle as well if I were in your position
+ * while not even knowing where to start. So here's a more human-friendly explanation:
  *
  *
- * Firstly, the lib is completely static, meaning that there's no need for
- * struct constructors to be initialized (unless you're using the VM::vmaware
- * struct). The main focus of the lib are the tables:
- *  - the TECHNIQUE table stores all the VM detection technique information in a
- * std::array
+ * Firstly, the lib is completely static, meaning that there's no need for struct
+ * constructors to be initialized (unless you're using the VM::vmaware struct).
+ * The main focus of the lib are the tables:
+ *  - the TECHNIQUE table stores all the VM detection technique information in a std::array
  *
- *  - the BRAND table stores every VM brand as a std::array as well, but as a
- * scoreboard. This means that if a VM detection technique has detected a VM
- * brand, that brand will have an incremented score. After every technique is
- * run, the brand with the highest score is chosen as the officially detected
- * brand.
+ *  - the BRAND table stores every VM brand as a std::array as well, but as a scoreboard.
+ *    This means that if a VM detection technique has detected a VM brand, that brand will have an
+ *    incremented score. After every technique is run, the brand with the highest score
+ *    is chosen as the officially detected brand.
  *
- * The techniques are all static functions, which all return a boolean. There
- * are a few categories of techniques that target vastly different things such
- * as OS queries, CPU values, other hardware values, firmware data, and system
- * files just to name a few.
+ * The techniques are all static functions, which all return a boolean. There are a few
+ * categories of techniques that target vastly different things such as OS queries, CPU
+ * values, other hardware values, firmware data, and system files just to name a few.
  *
  *
- * Secondly, there are multiple modules in the lib that are combined to
- * integrate with the functionalities needed:
+ * Secondly, there are multiple modules in the lib that are combined to integrate with
+ * the functionalities needed:
  *    - core module:
- *        This contains many important components such as the aforementioned
- * tables, the standard structure for how VM techniques are organised,
- * functionalities to run all the techniques in the technique table,
- * functionalities to run custom-made techniques by the user, and an argument
- * handler based on the argument input by the user.
+ *        This contains many important components such as the aforementioned tables,
+ *        the standard structure for how VM techniques are organised, functionalities
+ *        to run all the techniques in the technique table, functionalities to run
+ *        custom-made techniques by the user, and an argument handler based on the
+ *        argument input by the user.
  *
  *    - cpu module:
- *        As the name suggests, this contains functionalities for the CPU. There
- * are many techniques that utilise some kind of low-level CPU interaction, so
+ *        As the name suggests, this contains functionalities for the CPU. There are
+ *        many techniques that utilise some kind of low-level CPU interaction, so
  *        this module was added to further standardise it.
  *
  *    - memo module:
- *        This contains functionalities for memoizing technique results (not to
- * be confused with "memorization"). More specifically, this allows us to cache
- *        a technique result in a table where each entry contains a technique
- * and its result. This allows us to avoid re-running techniques which happens a
- * lot internally. Some techniques are costlier than others in terms of
- *        performance, so this is a crucial module that allows us to save a lot
- * of time. Additionally, it contains other memoization caches for various other
+ *        This contains functionalities for memoizing technique results (not to be
+ *        confused with "memorization"). More specifically, this allows us to cache
+ *        a technique result in a table where each entry contains a technique and its
+ *        result. This allows us to avoid re-running techniques which happens a lot
+ *        internally. Some techniques are costlier than others in terms of
+ *        performance, so this is a crucial module that allows us to save a lot of
+ *        time. Additionally, it contains other memoization caches for various other
  *        things for convenience.
  *
  *    - util module:
- *        This contains many utility functionalities to be used by the
- * techniques. Examples of functionalities include file I/O, registries,
- * permission checks, system commands, HDD sizes, RAM sizes, debugs, process
- * checking, OS queries, Hyper-X, and so on. (It should be mentioned that this
- * is probably the least enjoyable part of the lib to read, since it's really
- * messy)
+ *        This contains many utility functionalities to be used by the techniques.
+ *        Examples of functionalities include file I/O, registries, permission
+ *        checks, system commands, HDD sizes, RAM sizes, debugs, process checking,
+ *        OS queries, Hyper-X, and so on. (It should be mentioned that this is
+ *        probably the least enjoyable part of the lib to read, since it's really messy)
  *
  *
- * Thirdly, We'll explain in this section how all of these facets of the lib
- * interact with each other. Let's take an example with VM::detect(), where it
- * returns a boolean true or false if a VM has been detected or not. The chain
- * of steps it takes goes like this:
+ * Thirdly, We'll explain in this section how all of these facets of the lib interact with
+ * each other. Let's take an example with VM::detect(), where it returns a boolean true or
+ * false if a VM has been detected or not. The chain of steps it takes goes like this:
  *    1. The function tries to handle the user arguments (if there's
  *       any), and generates a std::bitset. This bitset has a length of
  *       every VM detection technique + settings, where each bit
@@ -176,9 +168,8 @@
  *       a total. If the total is above 150, that means it's a VM[1].
  *
  *
- * There are other functions such as VM::brand(), which returns a std::string of
- * the most likely brand that your system is running on. It has a bit of a
- * different mechanism:
+ * There are other functions such as VM::brand(), which returns a std::string of the most
+ * likely brand that your system is running on. It has a bit of a different mechanism:
  *    1. Same as step 1 in VM::detect()
  *
  *    2. Check if the majority of techniques have been run already and stored
@@ -204,8 +195,7 @@
  *       side. In reality, there should be an indication that Azure is involved
  *       since it's a better idea to let the user know that the brand is "Azure
  *       Hyper-V" instead of just "Hyper-V". So what this step does is "merge"
- *       the brands together to form a more accurate idea of the brand(s)
- * involved.
+ *       the brands together to form a more accurate idea of the brand(s) involved.
  *
  *    5. After all of this, the scoreboard is sorted in descending order, where
  *       the brands with the highest points are now selected as the official
@@ -215,8 +205,7 @@
  *       invokes VM::brand() again, the result is retrieved from the cache
  *       without needing to run all of the previous steps again.
  *
- * (NOTE: it's a bit more complicated than this, but that's the gist of how this
- * function works)
+ * (NOTE: it's a bit more complicated than this, but that's the gist of how this function works)
  *
  * Most of the functions provided usually depend on the 2 techniques covered.
  * And they serve as a functionality base for other components of the lib.
@@ -230,224 +219,222 @@
 #define VMAWARE_HEADER
 
 #ifndef __VMAWARE_DEBUG__
-#if defined(_DEBUG)   /* MSVC Debug */                                         \
-    || defined(DEBUG) /* user or build-system */
-#define __VMAWARE_DEBUG__
-#endif
+    #if defined(_DEBUG)    /* MSVC Debug */       \
+    || defined(DEBUG)     /* user or build-system */
+        #define __VMAWARE_DEBUG__
+    #endif
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#define WINDOWS 1
-#define LINUX 0
-#define APPLE 0
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    
+    #define WINDOWS 1
+    #define LINUX 0
+    #define APPLE 0
 #elif (defined(__linux__))
-#define WINDOWS 0
-#define LINUX 1
-#define APPLE 0
-#elif (defined(__APPLE__) || defined(__APPLE_CPP__) || defined(__MACH__) ||    \
-       defined(__DARWIN))
-#define WINDOWS 0
-#define LINUX 0
-#define APPLE 1
+    #define WINDOWS 0
+    #define LINUX 1
+    #define APPLE 0
+#elif (defined(__APPLE__) || defined(__APPLE_CPP__) || defined(__MACH__) || defined(__DARWIN))
+    #define WINDOWS 0
+    #define LINUX 0
+    #define APPLE 1
 #else
-#define WINDOWS 0
-#define LINUX 0
-#define APPLE 0
+    #define WINDOWS 0
+    #define LINUX 0
+    #define APPLE 0
 #endif
 
 #ifdef _MSC_VER
-#define MSVC 1
+    #define MSVC 1
 #endif
 
 #if defined(_MSVC_LANG)
-#define VMA_CPLUSPLUS _MSVC_LANG
+    #define VMA_CPLUSPLUS _MSVC_LANG
 #else
-#define VMA_CPLUSPLUS __cplusplus
+    #define VMA_CPLUSPLUS __cplusplus
 #endif
 
 #if VMA_CPLUSPLUS >= 202302L
-#define VMA_CPP 23
+    #define VMA_CPP 23
 #elif VMA_CPLUSPLUS >= 202002L
-#define VMA_CPP 20
+    #define VMA_CPP 20
 #elif VMA_CPLUSPLUS >= 201703L
-#define VMA_CPP 17
+    #define VMA_CPP 17
 #elif VMA_CPLUSPLUS >= 201402L
-#define VMA_CPP 14
+    #define VMA_CPP 14
 #elif VMA_CPLUSPLUS >= 201103L
-#define VMA_CPP 11
+    #define VMA_CPP 11
 #elif VMA_CPLUSPLUS >= 199711L
-#define VMA_CPP 98 /* C++98 or C++03 */
+    #define VMA_CPP 98 /* C++98 or C++03 */
 #else
-#error "Unsupported C++ standard (pre-C++98 or unknown)."
+    #error "Unsupported C++ standard (pre-C++98 or unknown)."
 #endif
-
+    
 #if (VMA_CPP < 11 && !WINDOWS)
-#error                                                                         \
-    "VMAware only supports C++11 or above, set your compiler flag to '-std=c++20' for gcc/clang, or '/std:c++20' for MSVC"
+    #error "VMAware only supports C++11 or above, set your compiler flag to '-std=c++20' for gcc/clang, or '/std:c++20' for MSVC"
 #endif
-
+        
 #if defined(__x86_64__) || defined(_M_X64)
-#define x86_64 1
+    #define x86_64 1
 #else
-#define x86_64 0
+    #define x86_64 0
 #endif
 
 #if defined(__i386__) || defined(_M_IX86)
-#define x86_32 1
+    #define x86_32 1
 #else
-#define x86_32 0
+    #define x86_32 0
 #endif
 
 #if x86_32 || x86_64
-#define x86 1
+    #define x86 1
 #else
-#define x86 0
+    #define x86 0
 #endif
-
+    
 #if defined(__aarch64__) || defined(_M_ARM64) || defined(__ARM_LINUX_COMPILER__)
-#define ARM64 1
+    #define ARM64 1
 #else
-#define ARM64 0
+    #define ARM64 0
 #endif
 
 #if (defined(__arm__) || defined(_M_ARM)) && !ARM64
-#define ARM32 1
+    #define ARM32 1
 #else
-#define ARM32 0
+    #define ARM32 0
 #endif
-
+    
 #if ARM32 || ARM64
-#define ARM 1
+    #define ARM 1
 #else
-#define ARM 0
+    #define ARM 0
 #endif
 
 #if (!APPLE && (VMA_CPP >= 20) && (!CLANG || __clang_major__ >= 16))
-#define SOURCE_LOCATION_SUPPORTED 1
+    #define SOURCE_LOCATION_SUPPORTED 1
 #else
-#define SOURCE_LOCATION_SUPPORTED 0
+    #define SOURCE_LOCATION_SUPPORTED 0
 #endif
 
 #if defined(__clang__)
-#define GCC 0
-#define CLANG 1
+    #define GCC 0
+    #define CLANG 1
 #elif defined(__GNUC__)
-#define GCC 1
-#define CLANG 0
+    #define GCC 1
+    #define CLANG 0
 #else
-#define GCC 0
-#define CLANG 0
+    #define GCC 0
+    #define CLANG 0
 #endif
 
 #if !(defined(WINDOWS) || defined(LINUX) || defined(APPLE))
-#warning "Unknown OS detected, tests will be severely limited"
+    #warning "Unknown OS detected, tests will be severely limited"
 #endif
 
 #if (VMA_CPP >= 23)
-#include <limits>
+    #include <limits>
 #endif
 #if (VMA_CPP >= 20)
-#include <bit>
-#include <ranges>
-#if (SOURCE_LOCATION_SUPPORTED)
-#include <source_location>
-#endif
+    #include <bit>
+    #include <ranges>
+    #if (SOURCE_LOCATION_SUPPORTED)
+        #include <source_location>
+    #endif
 #endif
 #if (VMA_CPP >= 17)
-#include <filesystem>
-#include <system_error>
-#endif
+    #include <filesystem>
+        #include <system_error>
+    #endif
 #ifdef __VMAWARE_DEBUG__
-#include <codecvt>
-#include <iomanip>
-#include <ios>
-#include <locale>
+    #include <iomanip>
+    #include <ios>
+    #include <locale>
+    #include <codecvt>
 #endif
 
-#include <algorithm>
+#include <cstdio>
+#include <functional>
+#include <cstring>
+#include <string>
+#include <fstream>
+#include <thread>
+#include <cstdint>
+#include <unordered_set>
+#include <unordered_map>
 #include <array>
-#include <bitset>
+#include <algorithm>
+#include <iostream>
 #include <cassert>
 #include <cmath>
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <numeric>
 #include <sstream>
-#include <stdexcept>
-#include <string>
-#include <thread>
+#include <bitset>
 #include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
+#include <stdexcept>
+#include <numeric>
 
 #if (WINDOWS)
-#include <devguid.h>
-#include <devpkey.h>
-#include <initguid.h>
-#include <intrin.h>
-#include <powerbase.h>
-#include <setupapi.h>
-#include <windows.h>
-#include <winevt.h>
-#include <winioctl.h>
-#include <winternl.h>
+    #include <windows.h>
+    #include <intrin.h>
+    #include <winioctl.h>
+    #include <winternl.h>
+    #include <powerbase.h>
+    #include <setupapi.h>
+    #include <initguid.h>
+    #include <devpkey.h>
+    #include <devguid.h>
+    #include <winevt.h>
 
-#pragma comment(lib, "setupapi.lib")
-#pragma comment(lib, "powrprof.lib")
-#pragma comment(lib, "mincore.lib")
-#pragma comment(lib, "wevtapi.lib")
+    #pragma comment(lib, "setupapi.lib")
+    #pragma comment(lib, "powrprof.lib")
+    #pragma comment(lib, "mincore.lib")
+    #pragma comment(lib, "wevtapi.lib")
 #elif (LINUX)
-#if (x86)
-#include <cpuid.h>
-#include <immintrin.h>
-#include <x86intrin.h>
-#endif
-#include <cctype>
-#include <cerrno>
-#include <csetjmp>
-#include <csignal>
-#include <dirent.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <memory>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <sched.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/statvfs.h>
-#include <sys/syscall.h>
-#include <sys/sysinfo.h>
-#include <unistd.h>
+    #if (x86)
+        #include <cpuid.h>
+        #include <x86intrin.h>
+        #include <immintrin.h>
+    #endif
+    #include <sys/stat.h>
+    #include <sys/statvfs.h>
+    #include <sys/ioctl.h>
+    #include <sys/syscall.h>
+    #include <sys/sysinfo.h>
+    #include <net/if.h>
+    #include <netinet/in.h>
+    #include <unistd.h>
+    #include <string.h>
+    #include <dirent.h>
+    #include <memory>
+    #include <cctype>
+    #include <fcntl.h>
+    #include <limits.h>
+    #include <csignal>
+    #include <csetjmp>
+    #include <pthread.h>
+    #include <sched.h>
+    #include <cerrno>
 #elif (APPLE)
-#if (x86)
-#include <cpuid.h>
-#include <immintrin.h>
-#include <x86intrin.h>
-#endif
-#include <chrono>
-#include <errno.h>
-#include <sys/sysctl.h>
-#include <sys/types.h>
-#include <sys/user.h>
-#include <time.h>
-#include <unistd.h>
+    #if (x86)
+        #include <cpuid.h>
+        #include <x86intrin.h>
+        #include <immintrin.h>
+    #endif
+    #include <sys/types.h>
+    #include <sys/sysctl.h>
+    #include <sys/user.h>
+    #include <unistd.h>
+    #include <time.h>
+    #include <errno.h>
+    #include <chrono>
 #endif
 
 #ifdef __VMAWARE_DEBUG__
-#define debug(...) VM::util::debug_msg(__VA_ARGS__)
+    #define debug(...) VM::util::debug_msg(__VA_ARGS__)
 #else
-#define debug(...)
+    #define debug(...)
 #endif
 
 /**

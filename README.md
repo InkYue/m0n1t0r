@@ -1,8 +1,6 @@
 # m0n1t0r
 
-[![MacOS Build](https://github.com/MMitsuha/m0n1t0r/actions/workflows/macos.yml/badge.svg)](https://github.com/MMitsuha/m0n1t0r/actions/workflows/macos.yml)
-[![Ubuntu Build](https://github.com/MMitsuha/m0n1t0r/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/MMitsuha/m0n1t0r/actions/workflows/ubuntu.yml)
-[![Windows Build](https://github.com/MMitsuha/m0n1t0r/actions/workflows/windows.yml/badge.svg)](https://github.com/MMitsuha/m0n1t0r/actions/workflows/windows.yml)
+[![Build](https://github.com/MMitsuha/m0n1t0r/actions/workflows/build.yml/badge.svg)](https://github.com/MMitsuha/m0n1t0r/actions/workflows/build.yml)
 
 A high-performance, cross-platform command and control framework for red teams, written in Rust.
 

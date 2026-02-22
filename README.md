@@ -1,6 +1,7 @@
 # m0n1t0r
 
 [![Build](https://github.com/MMitsuha/m0n1t0r/actions/workflows/build.yml/badge.svg)](https://github.com/MMitsuha/m0n1t0r/actions/workflows/build.yml)
+[![Docker](https://github.com/MMitsuha/m0n1t0r/actions/workflows/docker.yml/badge.svg)](https://github.com/MMitsuha/m0n1t0r/actions/workflows/docker.yml)
 
 A high-performance, cross-platform command and control framework for red teams, written in Rust.
 
@@ -153,6 +154,27 @@ A platform feature **must** be specified at build time:
 | `winnt` | Windows |
 | `winnt-uac` | Windows with UAC elevation (client only) |
 | `macos` | macOS |
+
+## Docker
+
+The quickest way to run the server and web UI together:
+
+```bash
+docker compose up --build
+```
+
+This builds a multi-stage image that compiles the server, builds the UI, and packages everything into a minimal Debian runtime with nginx as a reverse proxy.
+
+| Port | Service |
+|------|---------|
+| `80` | Web UI (nginx) |
+| `27853` | Client TLS connections |
+
+TLS certificates are auto-generated during the build. To use your own, mount them as a volume:
+
+```bash
+docker compose run -v ./certs:/app/certs m0n1t0r
+```
 
 ## Usage
 

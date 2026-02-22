@@ -16,7 +16,7 @@ struct Arguments {
     key: PathBuf,
     #[arg(long)]
     cert: PathBuf,
-    #[arg(long, default_value_t = !cfg!(debug_assertions))]
+    #[arg(long, default_value_t = false)]
     use_https: bool,
     #[arg(long, default_value = "debug")]
     log_level: String,

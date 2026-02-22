@@ -80,6 +80,7 @@ fn main() {
         "src/client/windows/autorun.rs",
         "src/client/windows/process.rs",
         "src/client/windows/charset.rs",
+        "src/client/windows/blind.rs",
     ]);
 
     xmake_build("m0n1t0r-cpp-general-lib");

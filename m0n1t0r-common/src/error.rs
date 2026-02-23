@@ -52,6 +52,12 @@ pub enum ParseError {
 
     #[error("unsupported format")]
     UnsupportedFormat,
+
+    #[error("invalid certificate: {0}")]
+    Certificate(serde_error::Error),
+
+    #[error("invalid DNS name: {0}")]
+    DnsName(serde_error::Error),
 }
 
 #[derive(Error, Debug, Serialize, Deserialize, Clone)]

@@ -1,8 +1,8 @@
 pub type ClientMap = HashMap<SocketAddr, Arc<RwLock<ClientObj>>>;
 
 use crate::ClientObj;
-use m0n1t0r_common::{NetworkError, Result};
 use log::{debug, info, warn};
+use m0n1t0r_common::{NetworkError, ParseError, Result};
 use m0n1t0r_common::{
     client::{ClientClient, ClientServerSharedMut},
     server::ServerClient,
@@ -96,8 +96,8 @@ fn ca_store() -> Result<RootCertStore> {
         "certs/ca.crt"
     ))) {
         store
-            .add(cert.map_err(|e| m0n1t0r_common::Error::Unknown(serde_error::Error::new(&e)))?)
-            .map_err(|e| m0n1t0r_common::Error::Unknown(serde_error::Error::new(&e)))?;
+            .add(cert.map_err(|e| m0n1t0r_common::Error::Parse(ParseError::Certificate(serde_error::Error::new(&e))))?)
+            .map_err(|e| m0n1t0r_common::Error::Parse(ParseError::Certificate(serde_error::Error::new(&e))))?;
     }
 
     Ok(store)
@@ -172,7 +172,7 @@ pub async fn accept(
     let stream = connector
         .connect(
             ServerName::try_from(host.to_string())
-                .map_err(|e| m0n1t0r_common::Error::Unknown(serde_error::Error::new(&e)))?,
+                .map_err(|e| m0n1t0r_common::Error::Parse(ParseError::DnsName(serde_error::Error::new(&e))))?,
             stream,
         )
         .await?;
@@ -222,5 +222,7 @@ pub async fn run(config: &Config, client_map: Arc<RwLock<ClientMap>>) -> Result<
         }
     }
 
-    Err(m0n1t0r_common::Error::Network(NetworkError::ConnectionFailed))
+    Err(m0n1t0r_common::Error::Network(
+        NetworkError::ConnectionFailed,
+    ))
 }

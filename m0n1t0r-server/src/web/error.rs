@@ -172,8 +172,9 @@ impl actix_web::ResponseError for Error {
             Error::Auth(AuthError::Unauthorized(_)) => StatusCode::UNAUTHORIZED,
 
             // 403 Forbidden
-            Error::Auth(AuthError::Forbidden(_))
-            | Error::Auth(AuthError::PasswordMismatch) => StatusCode::FORBIDDEN,
+            Error::Auth(AuthError::Forbidden(_)) | Error::Auth(AuthError::PasswordMismatch) => {
+                StatusCode::FORBIDDEN
+            }
 
             // 404 Not Found
             Error::NotFound => StatusCode::NOT_FOUND,

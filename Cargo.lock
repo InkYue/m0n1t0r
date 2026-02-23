@@ -3450,6 +3450,7 @@ dependencies = [
  "rustls-pki-types",
  "scrap",
  "serde 1.0.228",
+ "serde-error",
  "tokio",
  "tokio-rustls",
  "tokio-util",

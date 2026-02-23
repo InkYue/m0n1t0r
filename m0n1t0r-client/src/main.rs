@@ -13,9 +13,6 @@ async fn init() -> Result<()> {
     use std::time::Duration;
     use tokio::time;
 
-    #[cfg(target_os = "windows")]
-    m0n1t0r_client::client::windows::blind::patch_etw_event_write().await?;
-
     if !m0n1t0r_client::init().await? {
         time::sleep(Duration::from_secs(60)).await;
         return Err(m0n1t0r_common::Error::InitializationFailed.into());

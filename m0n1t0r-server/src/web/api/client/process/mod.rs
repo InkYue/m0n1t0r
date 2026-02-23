@@ -1,5 +1,6 @@
 pub mod execute;
 pub mod interactive;
+pub mod voidgate;
 
 use crate::web::{AppState, Response, Result as WebResult, api::client::get_agent};
 use actix_web::{

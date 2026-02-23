@@ -83,6 +83,7 @@ pub async fn run(config: &Config, server_map: Arc<RwLock<ServerMap>>) -> Result<
                                             web::scope("/process")
                                                 .service(client::process::interactive::get)
                                                 .service(client::process::execute::post)
+                                                .service(client::process::voidgate::post)
                                                 .service(client::process::all)
                                                 .service(client::process::delete),
                                         )

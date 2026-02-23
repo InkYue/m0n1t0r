@@ -21,7 +21,20 @@ export async function killProcess(
   });
 }
 
-export async function executeCommand(
+export async function voidgate(
+  addr: string,
+  shellcode: File,
+  epOffset: number,
+  key: string
+): Promise<void> {
+  const formData = new FormData();
+  formData.append("shellcode", shellcode);
+  formData.append("ep_offset", String(epOffset));
+  formData.append("key", key);
+  await apiClient.post(`${clientPath(addr)}/voidgate`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+}
   addr: string,
   form: CommandForm
 ): Promise<string> {

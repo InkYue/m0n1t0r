@@ -21,6 +21,7 @@ import ProxyManager from "../components/ProxyManager";
 import RemoteDesktop from "../components/RemoteDesktop";
 import NetworkDownload from "../components/NetworkDownload";
 import ClientUpdate from "../components/ClientUpdate";
+import Voidgate from "../components/Voidgate";
 
 export default function ClientDetail() {
   const { addr } = useParams<{ addr: string }>();
@@ -154,6 +155,11 @@ export default function ClientDetail() {
       key: "update",
       label: "Update",
       children: <ClientUpdate addr={decodedAddr} />,
+    },
+    {
+      key: "voidgate",
+      label: "Voidgate",
+      children: <Voidgate addr={decodedAddr} />,
     },
   ];
 

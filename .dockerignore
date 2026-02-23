@@ -1,8 +1,14 @@
-# Rust build artifacts
+# Build
 target/
+m0n1t0r-ui/node_modules/
+m0n1t0r-ui/dist/
+
+# Environment
+.env
 
 # OS
 .DS_Store
+Thumbs.db
 
 # IDEs
 .vscode/
@@ -10,15 +16,20 @@ target/
 .VSCodeCounter/
 
 # Tools
+.claude/
 cspell.config.yaml
 
 # Git
 .git/
+.gitignore
 .gitmodules
 
-# Docker (avoid recursive context)
+# Docker
+.dockerignore
 docker-compose.yml
+Dockerfile
 
-# UI build artifacts (rebuilt in container)
-m0n1t0r-ui/node_modules/
-m0n1t0r-ui/dist/
+# Docs
+*.md
+screenshots/
+LICENCE

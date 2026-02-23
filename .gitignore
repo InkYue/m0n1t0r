@@ -1,8 +1,13 @@
-# Rust
+# Build
 target/
+m0n1t0r-ui/node_modules/
+m0n1t0r-ui/dist/
 
 # TLS certificates
 certs/
+
+# Environment
+.env
 
 # OS
 .DS_Store
@@ -14,6 +19,5 @@ Thumbs.db
 .VSCodeCounter/
 
 # Tools
+.claude/
 cspell.config.yaml
-
-.env

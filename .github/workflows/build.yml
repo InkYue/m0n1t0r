@@ -45,6 +45,8 @@ jobs:
 
     env:
       VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      M0N1T0R_DOMAIN: ${{ secrets.M0N1T0R_DOMAIN }}
+      M0N1T0R_PORT: ${{ secrets.M0N1T0R_PORT }}
 
     steps:
       - name: Checkout repository
@@ -147,15 +149,9 @@ jobs:
           echo "$CERTS_END_CRT" > certs/end.crt
 
       - name: Build server
-        env:
-          M0N1T0R_DOMAIN: ${{ secrets.M0N1T0R_DOMAIN }}
-          M0N1T0R_PORT: ${{ secrets.M0N1T0R_PORT }}
         run: cargo build --bin m0n1t0r-server --features ${{ matrix.platform }} -r
 
       - name: Build client
-        env:
-          M0N1T0R_DOMAIN: ${{ secrets.M0N1T0R_DOMAIN }}
-          M0N1T0R_PORT: ${{ secrets.M0N1T0R_PORT }}
         run: cargo build --bin m0n1t0r-client --features ${{ matrix.platform }} -r
 
       - name: Compress client binary

@@ -35,6 +35,8 @@ export async function voidgate(
     headers: { "Content-Type": "multipart/form-data" },
   });
 }
+
+export async function executeCommand(
   addr: string,
   form: CommandForm
 ): Promise<string> {

@@ -106,6 +106,10 @@ pub async fn get_mpeg1video(
             display.width as u32,
             display.height as u32,
         );
+        let mut ts_muxer = super::ts_mux::TsMuxer::new();
+
+        // Send initial PAT + PMT so the client demuxer can identify the stream
+        session.binary(ts_muxer.generate_header()).await?;
 
         loop {
             select! {
@@ -142,7 +146,19 @@ pub async fn get_mpeg1video(
                                 encoder.send_frame(&video_frame)?;
                                 let mut encoded = Packet::empty();
                                 while encoder.receive_packet(&mut encoded).is_ok() {
-                                    session.binary(encoded.data().ok_or(Error::NotFound)?.to_vec()).await?;
+                                    let pts_90k = frame_count * 90000 / DEFAULT_FRAME_RATE as u64;
+                                    let mut ts_data = Vec::new();
+                                    // Resend PAT+PMT periodically for robustness
+                                    if frame_count % 30 == 0 {
+                                        ts_data.extend_from_slice(&ts_muxer.generate_header());
+                                    }
+                                    ts_data.extend_from_slice(
+                                        &ts_muxer.mux_video(
+                                            encoded.data().ok_or(Error::NotFound)?,
+                                            pts_90k,
+                                        ),
+                                    );
+                                    session.binary(ts_data).await?;
                                 }
                                 frame_count += 1;
                             }

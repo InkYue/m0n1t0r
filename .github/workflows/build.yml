@@ -104,7 +104,11 @@ jobs:
 
       - name: Clone vcpkg
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
-        run: git clone https://github.com/microsoft/vcpkg
+        shell: bash
+        run: |
+          if [ ! -d "vcpkg/.git" ]; then
+            git clone https://github.com/microsoft/vcpkg
+          fi
 
       - name: Bootstrap vcpkg (Unix)
         if: steps.vcpkg-cache.outputs.cache-hit != 'true' && runner.os != 'Windows'

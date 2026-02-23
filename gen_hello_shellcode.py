@@ -47,16 +47,17 @@ BITS 64
 ; Finds kernel32 by LDR module name hash (robust on Win10/11).
 ; Ends with RET - safe for voidgate-spawned threads.
 
-; Stack frame layout (after prologue alignment):
+; Stack frame layout after prologue alignment:
 ;
-;   rsp+0x00 .. rsp+0x1F : shadow space (32 B) for all calls
-;   rsp+0x20 .. rsp+0x2F : user32.dll slot (16 B) for LoadLibraryA
-;   rsp+0x30 .. rsp+0x37 : nihao UTF-16 slot ( 8 B) for MessageBoxW lpText
-;   rsp+0x38 .. rsp+0x47 : m0n1t0r UTF-16 slot (16 B) for MessageBoxW lpCaption
+;   rsp+0x00..0x1F : shadow space 32 bytes for all calls
+;   rsp+0x20..0x2F : user32.dll slot 16 bytes for LoadLibraryA
+;   rsp+0x30..0x37 : nihao UTF-16 slot 8 bytes for MessageBoxW lpText
+;   rsp+0x38..0x47 : m0n1t0r UTF-16 slot 16 bytes for MessageBoxW lpCaption
+;   rsp+0x48..0x4F : padding 8 bytes keeps rsp 16-byte aligned
 ;
-; Total: 0x48 (72 B), keeps rsp 16-byte aligned.
-; Each call pushes retaddr (rsp -= 8), so inside the callee:
-;   new_rsp+0x08 = string slot, new_rsp+0x10..+0x27 = shadow  (fits in 0x48)
+; Total 0x50 = 80 bytes, 0x50 mod 16 = 0, rsp is 16-byte aligned before every call.
+; Each call pushes retaddr so inside the callee:
+;   new_rsp+0x08 = string slot, new_rsp+0x10..0x27 = shadow space
 
 global _start
 _start:
@@ -72,7 +73,7 @@ _start:
 
     mov  rbp, rsp
     and  rsp, -16
-    sub  rsp, 0x48              ; one allocation covers shadow + all string slots
+    sub  rsp, 0x50              ; one allocation covers shadow + all string slots + alignment padding
 
     ; --- find kernel32 by LDR module name hash ---
     mov  r15d, 0x{K32_HASH:08X}

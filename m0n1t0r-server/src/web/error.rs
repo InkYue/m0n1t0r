@@ -145,14 +145,40 @@ impl actix_web::ResponseError for Error {
     fn status_code(&self) -> StatusCode {
         match self {
             Error::Okay => StatusCode::OK,
-            Error::NotFound => StatusCode::NOT_FOUND,
+
+            // 400 Bad Request — client sent invalid input
             Error::Parse(ParseError::WebParameter(_))
             | Error::Parse(ParseError::Command(_))
             | Error::Parse(ParseError::IntValue(_))
             | Error::Parse(ParseError::IpAddress(_)) => StatusCode::BAD_REQUEST,
-            Error::Auth(AuthError::Forbidden(_)) => StatusCode::FORBIDDEN,
+
+            // 401 Unauthorized
             Error::Auth(AuthError::Unauthorized(_)) => StatusCode::UNAUTHORIZED,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
+
+            // 403 Forbidden
+            Error::Auth(AuthError::Forbidden(_)) => StatusCode::FORBIDDEN,
+
+            // 404 Not Found
+            Error::NotFound => StatusCode::NOT_FOUND,
+
+            // 422 Unprocessable Entity — response serialization failed
+            Error::Parse(ParseError::Serialize(_)) => StatusCode::UNPROCESSABLE_ENTITY,
+
+            // 500 Internal Server Error — server-side failures
+            Error::Io(IoError::Tokio(_))
+            | Error::Framework(FrameworkError::Actix(_))
+            | Error::Media(MediaError::FFmpeg(_))
+            | Error::External(ExternalError::QQKey(_))
+            | Error::Generic(_)
+            | Error::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+
+            // 501 Not Implemented
+            Error::Unimplemented => StatusCode::NOT_IMPLEMENTED,
+
+            // 502 Bad Gateway — upstream client agent errors
+            Error::Network(NetworkError::Rpc(_))
+            | Error::Network(NetworkError::ChannelDisconnect(_))
+            | Error::Network(NetworkError::Socks5(_)) => StatusCode::BAD_GATEWAY,
         }
     }
 }

@@ -223,6 +223,10 @@ For the full API reference, see [**API Documentation**](m0n1t0r-server/src/web/a
 | `POST /api/v1/client/{addr}/proxy/socks5/noauth` | Create SOCKS5 proxy |
 | `GET /api/v1/server/notification` | Connection events (WebSocket) |
 
+## Screenshots
+
+![image](screenshots/image.png)
+
 ## License
 
 `m0n1t0r` is distributed under the GPLv3 license. The software comes with absolutely no warranty.

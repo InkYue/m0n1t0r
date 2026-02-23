@@ -27,11 +27,9 @@ export async function writeFile(
   path: string,
   file: File
 ): Promise<void> {
-  const formData = new FormData();
-  formData.append("file", file);
-  await apiClient.put(clientPath(addr), formData, {
+  await apiClient.put(clientPath(addr), file, {
     params: { type: "file", path },
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: { "Content-Type": "application/octet-stream" },
   });
 }
 
@@ -56,7 +54,7 @@ export async function getFileMetadata(
 ): Promise<FileInfo> {
   const res = await apiClient.get<ApiResponse<FileInfo>>(
     `${clientPath(addr)}/metadata`,
-    { params: { path } }
+    { params: { type: "file", path } }
   );
   return res.data.body;
 }

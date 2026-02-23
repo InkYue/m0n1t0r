@@ -25,9 +25,12 @@ export async function executeCommand(
   addr: string,
   form: CommandForm
 ): Promise<string> {
+  const params = new URLSearchParams();
+  params.append("command", form.command);
+  params.append("option", form.option);
   const res = await apiClient.post<ApiResponse<string>>(
     `${clientPath(addr)}/execute`,
-    form
+    params
   );
   return res.data.body;
 }

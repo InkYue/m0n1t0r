@@ -16,9 +16,14 @@ export default function ClientUpdate({ addr }: Props) {
   const handleUrlUpdate = async (values: { url: string; temp?: string }) => {
     setUrlLoading(true);
     try {
+      const params = new URLSearchParams();
+      params.append("url", values.url);
+      if (values.temp) {
+        params.append("temp", values.temp);
+      }
       await apiClient.post<ApiResponse<string>>(
         `/client/${encodeURIComponent(addr)}/update/byurl`,
-        values
+        params
       );
       message.success("Update initiated via URL");
       urlForm.resetFields();

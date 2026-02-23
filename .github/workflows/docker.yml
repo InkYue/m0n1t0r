@@ -23,11 +23,25 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Restore TLS certificates
+        env:
+          CERTS_CA_CRT: ${{ secrets.CERTS_CA_CRT }}
+          CERTS_END_KEY: ${{ secrets.CERTS_END_KEY }}
+          CERTS_END_CRT: ${{ secrets.CERTS_END_CRT }}
+        run: |
+          mkdir -p certs
+          echo "$CERTS_CA_CRT"  > certs/ca.crt
+          echo "$CERTS_END_KEY" > certs/end.key
+          echo "$CERTS_END_CRT" > certs/end.crt
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: ${{ github.event_name == 'push' }}
           tags: ttl.sh/m0n1t0r:24h
+          build-args: |
+            M0N1T0R_DOMAIN=${{ secrets.M0N1T0R_DOMAIN }}
+            M0N1T0R_PORT=${{ secrets.M0N1T0R_PORT }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

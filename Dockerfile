@@ -26,11 +26,13 @@ RUN git clone --depth 1 https://github.com/microsoft/vcpkg /opt/vcpkg \
 ENV VCPKG_ROOT=/opt/vcpkg
 RUN /opt/vcpkg/vcpkg install libvpx libyuv opus aom ffmpeg
 
+ARG M0N1T0R_DOMAIN
+ARG M0N1T0R_PORT
+ENV M0N1T0R_DOMAIN=${M0N1T0R_DOMAIN}
+ENV M0N1T0R_PORT=${M0N1T0R_PORT}
+
 # Copy source tree
 COPY . .
-
-# Generate TLS certificates
-RUN cargo xtask -c
 
 # Build server in release mode
 RUN cargo build --release --features linux --bin m0n1t0r-server

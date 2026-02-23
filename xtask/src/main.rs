@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use clap::Parser;
 use flexi_logger::Logger;
 use log::{error, info, warn};
@@ -26,7 +26,12 @@ fn main() -> Result<()> {
         let current = env::current_exe()?;
         let pwd = current
             .parent()
-            .ok_or(anyhow!("Failed to get current executable path"))?;
+            .ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "current executable has no parent directory",
+                )
+            })?;
         #[allow(unused_mut)]
         let mut client = pwd.join("m0n1t0r-client");
 

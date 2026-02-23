@@ -34,7 +34,7 @@ pub async fn get(
                 _ = canceller.cancelled() => break,
             }
         }
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, Error>(())
     }));
     Ok(response)
 }

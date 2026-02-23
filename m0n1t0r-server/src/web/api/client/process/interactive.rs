@@ -8,8 +8,7 @@ use actix_web::{
     web::{Buf, Path, Payload, Query},
 };
 use actix_ws::Message;
-use anyhow::anyhow;
-use m0n1t0r_common::{client::Client as _, process::Agent as _};
+use m0n1t0r_common::{NetworkError, client::Client as _, process::Agent as _};
 use std::net::SocketAddr;
 use tokio::{select, task};
 
@@ -39,13 +38,13 @@ pub async fn get(
                     Message::Close(_) => break,
                     _ => {}
                 },
-                msg = stdout_rx.recv() => session.text(String::from_utf8_lossy(msg?.ok_or(anyhow!("channel closed"))?.chunk()).to_string()).await?,
-                msg = stderr_rx.recv() => session.text(String::from_utf8_lossy(msg?.ok_or(anyhow!("channel closed"))?.chunk()).to_string()).await?,
+                msg = stdout_rx.recv() => session.text(String::from_utf8_lossy(msg?.ok_or(m0n1t0r_common::Error::Network(NetworkError::ChannelClosed))?.chunk()).to_string()).await?,
+                msg = stderr_rx.recv() => session.text(String::from_utf8_lossy(msg?.ok_or(m0n1t0r_common::Error::Network(NetworkError::ChannelClosed))?.chunk()).to_string()).await?,
                 _ = stdin_tx.closed() => break,
                 _ = canceller.cancelled() => break,
             }
         }
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, crate::web::error::Error>(())
     }));
 
     Ok(response)

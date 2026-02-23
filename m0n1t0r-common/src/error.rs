@@ -16,6 +16,18 @@ pub enum NetworkError {
 
     #[error("http request error: {0}")]
     HttpRequest(serde_error::Error),
+
+    #[error("channel closed")]
+    ChannelClosed,
+
+    #[error("peer connection is invalid")]
+    InvalidPeer,
+
+    #[error("connection lost")]
+    ConnectionLost,
+
+    #[error("all connection attempts failed")]
+    ConnectionFailed,
 }
 
 #[derive(Error, Debug, Serialize, Deserialize, Clone)]
@@ -37,6 +49,9 @@ pub enum ParseError {
 
     #[error("invalid parameter")]
     InvalidParameter,
+
+    #[error("unsupported format")]
+    UnsupportedFormat,
 }
 
 #[derive(Error, Debug, Serialize, Deserialize, Clone)]
@@ -64,6 +79,9 @@ pub enum Error {
 
     #[error("specified object not found")]
     NotFound,
+
+    #[error("initialization failed")]
+    InitializationFailed,
 
     #[error("unsupported operation")]
     Unsupported,
@@ -140,3 +158,46 @@ impl From<qqkey::Error> for Error {
         Self::External(ExternalError::QQKey(e))
     }
 }
+
+impl<T> From<remoc::rch::base::SendError<T>> for Error {
+    fn from(_e: remoc::rch::base::SendError<T>) -> Self {
+        Self::Network(NetworkError::ChannelClosed)
+    }
+}
+
+impl From<remoc::rch::base::RecvError> for Error {
+    fn from(_e: remoc::rch::base::RecvError) -> Self {
+        Self::Network(NetworkError::ChannelClosed)
+    }
+}
+
+impl<T> From<tokio::sync::watch::error::SendError<T>> for Error {
+    fn from(_e: tokio::sync::watch::error::SendError<T>) -> Self {
+        Self::Network(NetworkError::ChannelClosed)
+    }
+}
+
+impl From<remoc::ConnectError<std::io::Error, std::io::Error>> for Error {
+    fn from(_e: remoc::ConnectError<std::io::Error, std::io::Error>) -> Self {
+        Self::Network(NetworkError::ChannelClosed)
+    }
+}
+
+impl From<remoc::chmux::SendError> for Error {
+    fn from(_e: remoc::chmux::SendError) -> Self {
+        Self::Network(NetworkError::ChannelClosed)
+    }
+}
+
+impl From<remoc::chmux::RecvError> for Error {
+    fn from(_e: remoc::chmux::RecvError) -> Self {
+        Self::Network(NetworkError::ChannelClosed)
+    }
+}
+
+impl From<remoc::rch::lr::RecvError> for Error {
+    fn from(_e: remoc::rch::lr::RecvError) -> Self {
+        Self::Network(NetworkError::ChannelClosed)
+    }
+}
+

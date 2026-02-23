@@ -6,8 +6,8 @@ pub use client::ClientObj;
 pub use conn::ClientMap;
 pub use init::init;
 
-use anyhow::Result;
 use log::warn;
+use m0n1t0r_common::Result;
 use std::{sync::Arc, time::Duration};
 use tokio::{sync::RwLock, time};
 

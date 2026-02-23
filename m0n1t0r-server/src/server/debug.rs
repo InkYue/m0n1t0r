@@ -1,6 +1,6 @@
 use crate::ServerObj;
 use actix_web::web::Buf;
-use anyhow::{Result, anyhow};
+use m0n1t0r_common::{NetworkError, Result};
 use log::info;
 use m0n1t0r_common::{
     charset::Agent as _,
@@ -41,7 +41,7 @@ pub async fn run(server: Arc<RwLock<ServerObj>>) -> Result<()> {
                 stdout_rx
                     .recv()
                     .await?
-                    .ok_or(anyhow!("channel closed"))?
+                    .ok_or(m0n1t0r_common::Error::Network(NetworkError::ChannelClosed))?
                     .chunk()
             )
         );

@@ -7,7 +7,6 @@ use actix_web::{
     Responder, post,
     web::{Form, Json, Path},
 };
-use anyhow::anyhow;
 use m0n1t0r_common::{client::Client as _, proxy::Agent as _};
 use remoc::chmux::ReceiverStream;
 use serde::Deserialize;
@@ -53,7 +52,7 @@ pub async fn open_internal(
         loop {
             select! {
                 received = my_rx.recv() => {
-                    let (tx, rx, _) = received?.ok_or(anyhow!("forward is invalid"))?;
+                    let (tx, rx, _) = received?.ok_or(Error::Network(crate::web::error::NetworkError::InvalidForward))?;
                     let (mut stream_rx, mut stream_tx) = TcpStream::connect(from).await?.into_split();
 
                     tokio::spawn(async move {
@@ -72,7 +71,7 @@ pub async fn open_internal(
             }
         }
         canceller_tx.send(()).await?;
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, Error>(())
     });
     Ok((connection_canceller, session_canceller))
 }

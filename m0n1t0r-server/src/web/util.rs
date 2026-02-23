@@ -27,9 +27,10 @@ pub fn extractor_config() -> (
     )
 }
 
-pub async fn handle_websocket<F>(session: Session, future: F)
+pub async fn handle_websocket<F, E>(session: Session, future: F)
 where
-    F: Future<Output = anyhow::Result<()>> + 'static,
+    F: Future<Output = std::result::Result<(), E>> + 'static,
+    E: std::fmt::Display,
 {
     let _ = match future.await {
         Ok(_) => session.close(None).await,

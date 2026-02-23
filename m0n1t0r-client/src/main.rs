@@ -10,7 +10,6 @@ const DEFAULT_SERVER_PORT: u16 = 27853;
 
 #[cfg(not(debug_assertions))]
 async fn init() -> Result<()> {
-    use anyhow::bail;
     use std::time::Duration;
     use tokio::time;
 
@@ -19,7 +18,7 @@ async fn init() -> Result<()> {
 
     if !m0n1t0r_client::init().await? {
         time::sleep(Duration::from_secs(60)).await;
-        bail!("initialization failed");
+        return Err(m0n1t0r_common::Error::InitializationFailed.into());
     }
 
     Ok(())

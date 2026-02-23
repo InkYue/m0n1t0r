@@ -1,7 +1,7 @@
 pub type ClientMap = HashMap<SocketAddr, Arc<RwLock<ClientObj>>>;
 
 use crate::ClientObj;
-use anyhow::{Result, anyhow, bail};
+use m0n1t0r_common::{NetworkError, Result};
 use log::{debug, info, warn};
 use m0n1t0r_common::{
     client::{ClientClient, ClientServerSharedMut},
@@ -95,7 +95,9 @@ fn ca_store() -> Result<RootCertStore> {
         env!("CARGO_WORKSPACE_DIR"),
         "certs/ca.crt"
     ))) {
-        store.add(cert?)?;
+        store
+            .add(cert.map_err(|e| m0n1t0r_common::Error::Unknown(serde_error::Error::new(&e)))?)
+            .map_err(|e| m0n1t0r_common::Error::Unknown(serde_error::Error::new(&e)))?;
     }
 
     Ok(store)
@@ -168,7 +170,11 @@ pub async fn accept(
 ) -> Result<()> {
     let stream = TcpStream::connect(addr).await?;
     let stream = connector
-        .connect(ServerName::try_from(host.to_string())?, stream)
+        .connect(
+            ServerName::try_from(host.to_string())
+                .map_err(|e| m0n1t0r_common::Error::Unknown(serde_error::Error::new(&e)))?,
+            stream,
+        )
         .await?;
     debug!("{}: connection opened", addr);
     let client = Arc::new(RwLock::new(ClientObj::new(addr)));
@@ -178,7 +184,10 @@ pub async fn accept(
     let (mut tx, mut rx) = make_channel(canceller.clone(), addr, stream).await?;
     let (client_server, client_client) = ClientServerSharedMut::<_>::new(client.clone(), 1);
 
-    let server_client = rx.recv().await?.ok_or(anyhow!("server is invalid"))?;
+    let server_client = rx
+        .recv()
+        .await?
+        .ok_or(m0n1t0r_common::Error::Network(NetworkError::InvalidPeer))?;
     tx.send(client_client).await?;
 
     tokio::spawn(server_task(
@@ -194,7 +203,7 @@ pub async fn accept(
 
     select! {
         _ = canceller.cancelled() => {
-            bail!("connection lost")
+            return Err(m0n1t0r_common::Error::Network(NetworkError::ConnectionLost))
         },
         _ = terminator.cancelled() => {
             canceller.cancel();
@@ -213,5 +222,5 @@ pub async fn run(config: &Config, client_map: Arc<RwLock<ClientMap>>) -> Result<
         }
     }
 
-    bail!("all attempts to connect server failed")
+    Err(m0n1t0r_common::Error::Network(NetworkError::ConnectionFailed))
 }

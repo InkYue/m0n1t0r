@@ -2,7 +2,7 @@
 use crate::server;
 
 use crate::ServerObj;
-use anyhow::{Result, anyhow};
+use m0n1t0r_common::{NetworkError, Result};
 use log::{debug, info, warn};
 use m0n1t0r_common::{
     client::ClientClient,
@@ -160,7 +160,10 @@ pub async fn accept(
     let (server_server, server_client) = ServerServerSharedMut::<_>::new(server.clone(), 1);
 
     tx.send(server_client).await?;
-    let client_client = rx.recv().await?.ok_or(anyhow!("client is invalid"))?;
+    let client_client = rx
+        .recv()
+        .await?
+        .ok_or(m0n1t0r_common::Error::Network(NetworkError::InvalidPeer))?;
 
     tokio::spawn(server_task(
         canceller,

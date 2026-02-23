@@ -7,7 +7,6 @@ use actix_web::{
     Responder, post,
     web::{Form, Json, Path},
 };
-use anyhow::anyhow;
 use as_any::Downcast;
 use m0n1t0r_common::{client::Client as _, proxy::{Agent, AgentClient}};
 use remoc::chmux::ReceiverStream;
@@ -153,9 +152,7 @@ where
         match auth {
             Ok(b) => {
                 if !(*b) {
-                    return Err(Error::Auth(crate::web::error::AuthError::Forbidden(serde_error::Error::new(&*anyhow!(
-                        "password or username mismatch"
-                    )))));
+                    return Err(Error::Auth(crate::web::error::AuthError::PasswordMismatch));
                 }
             }
             Err(e) => return Err(Error::Auth(crate::web::error::AuthError::Forbidden(serde_error::Error::new(e)))),
@@ -182,7 +179,7 @@ where
                 Address::DomainAddress(domain, port) => net::lookup_host((domain, port))
                     .await?
                     .next()
-                    .ok_or(anyhow!("dns lookup failed"))?,
+                    .ok_or(crate::web::error::Error::Network(crate::web::error::NetworkError::DnsLookupFailed))?,
                 Address::SocketAddress(addr) => addr,
             };
             let (tx, rx) = agent.connect(addr).await?;

@@ -32,7 +32,7 @@ pub async fn get(
                 _ = rx.changed() => session.text(serde_json::to_string(&*rx.borrow_and_update())?).await?,
             }
         }
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, crate::web::error::Error>(())
     }));
     Ok(response)
 }

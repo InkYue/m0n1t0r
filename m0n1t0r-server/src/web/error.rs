@@ -16,6 +16,12 @@ pub enum NetworkError {
 
     #[error("socks5 error: {0}")]
     Socks5(serde_error::Error),
+
+    #[error("dns lookup failed")]
+    DnsLookupFailed,
+
+    #[error("forward channel is invalid")]
+    InvalidForward,
 }
 
 #[derive(Error, Debug, Serialize, Clone)]
@@ -50,12 +56,18 @@ pub enum AuthError {
 
     #[error("forbidden: {0}")]
     Forbidden(serde_error::Error),
+
+    #[error("password or username mismatch")]
+    PasswordMismatch,
 }
 
 #[derive(Error, Debug, Serialize, Clone)]
 pub enum MediaError {
     #[error("ffmpeg error: {0}")]
     FFmpeg(serde_error::Error),
+
+    #[error("unsupported video frame type")]
+    UnsupportedFormat,
 }
 
 #[derive(Error, Debug, Serialize, Clone)]
@@ -125,12 +137,16 @@ impl Discriminant<i16> for Error {
             Error::Parse(ParseError::WebParameter(_)) => -9,
             Error::Parse(ParseError::IntValue(_)) => -10,
             Error::External(ExternalError::QQKey(_)) => -11,
+            Error::Network(NetworkError::DnsLookupFailed) => -12,
             Error::Network(NetworkError::Socks5(_)) => -13,
             Error::Auth(AuthError::Forbidden(_)) => -14,
             Error::Auth(AuthError::Unauthorized(_)) => -15,
             Error::Generic(_) => -16,
             Error::Unimplemented => -17,
+            Error::Network(NetworkError::InvalidForward) => -18,
             Error::Media(MediaError::FFmpeg(_)) => -19,
+            Error::Auth(AuthError::PasswordMismatch) => -20,
+            Error::Media(MediaError::UnsupportedFormat) => -21,
             Error::Unknown => -255,
         }
     }
@@ -156,7 +172,8 @@ impl actix_web::ResponseError for Error {
             Error::Auth(AuthError::Unauthorized(_)) => StatusCode::UNAUTHORIZED,
 
             // 403 Forbidden
-            Error::Auth(AuthError::Forbidden(_)) => StatusCode::FORBIDDEN,
+            Error::Auth(AuthError::Forbidden(_))
+            | Error::Auth(AuthError::PasswordMismatch) => StatusCode::FORBIDDEN,
 
             // 404 Not Found
             Error::NotFound => StatusCode::NOT_FOUND,
@@ -168,6 +185,7 @@ impl actix_web::ResponseError for Error {
             Error::Io(IoError::Tokio(_))
             | Error::Framework(FrameworkError::Actix(_))
             | Error::Media(MediaError::FFmpeg(_))
+            | Error::Media(MediaError::UnsupportedFormat)
             | Error::External(ExternalError::QQKey(_))
             | Error::Generic(_)
             | Error::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
@@ -178,7 +196,9 @@ impl actix_web::ResponseError for Error {
             // 502 Bad Gateway — upstream client agent errors
             Error::Network(NetworkError::Rpc(_))
             | Error::Network(NetworkError::ChannelDisconnect(_))
-            | Error::Network(NetworkError::Socks5(_)) => StatusCode::BAD_GATEWAY,
+            | Error::Network(NetworkError::Socks5(_))
+            | Error::Network(NetworkError::DnsLookupFailed)
+            | Error::Network(NetworkError::InvalidForward) => StatusCode::BAD_GATEWAY,
         }
     }
 }
@@ -294,5 +314,59 @@ impl From<qqkey::Error> for Error {
 impl From<ffmpeg_next::Error> for Error {
     fn from(e: ffmpeg_next::Error) -> Self {
         Self::Media(MediaError::FFmpeg(serde_error::Error::new(&e)))
+    }
+}
+
+impl From<actix_ws::Closed> for Error {
+    fn from(e: actix_ws::Closed) -> Self {
+        Self::Framework(FrameworkError::Actix(serde_error::Error::new(&e)))
+    }
+}
+
+impl<T> From<remoc::rch::base::SendError<T>> for Error {
+    fn from(e: remoc::rch::base::SendError<T>) -> Self {
+        Self::from(m0n1t0r_common::Error::from(e))
+    }
+}
+
+impl From<remoc::rch::base::RecvError> for Error {
+    fn from(e: remoc::rch::base::RecvError) -> Self {
+        Self::from(m0n1t0r_common::Error::from(e))
+    }
+}
+
+impl From<scrap::Error> for Error {
+    fn from(e: scrap::Error) -> Self {
+        Self::Media(MediaError::FFmpeg(serde_error::Error::new(&e)))
+    }
+}
+
+impl From<hbb_common::protobuf::Error> for Error {
+    fn from(e: hbb_common::protobuf::Error) -> Self {
+        Self::from(m0n1t0r_common::Error::from(e))
+    }
+}
+
+impl From<remoc::chmux::SendError> for Error {
+    fn from(e: remoc::chmux::SendError) -> Self {
+        Self::from(m0n1t0r_common::Error::from(e))
+    }
+}
+
+impl From<remoc::chmux::RecvError> for Error {
+    fn from(e: remoc::chmux::RecvError) -> Self {
+        Self::from(m0n1t0r_common::Error::from(e))
+    }
+}
+
+impl From<remoc::rch::lr::RecvError> for Error {
+    fn from(e: remoc::rch::lr::RecvError) -> Self {
+        Self::from(m0n1t0r_common::Error::from(e))
+    }
+}
+
+impl<T> From<remoc::rch::lr::SendError<T>> for Error {
+    fn from(e: remoc::rch::lr::SendError<T>) -> Self {
+        Self::from(m0n1t0r_common::Error::from(e))
     }
 }

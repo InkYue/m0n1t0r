@@ -1,8 +1,8 @@
 #[cfg(debug_assertions)]
 pub mod debug;
 
-use anyhow::{Result, anyhow};
 use m0n1t0r_common::{
+    NetworkError, Result,
     client::{Client, ClientClient},
     server::Server,
 };
@@ -37,7 +37,7 @@ impl ServerObj {
     pub fn client(&self) -> Result<&ClientClient> {
         self.client_client
             .as_ref()
-            .ok_or(anyhow!("client not connected"))
+            .ok_or(m0n1t0r_common::Error::Network(NetworkError::InvalidPeer))
     }
 
     pub async fn terminate(&self) -> Result<()> {

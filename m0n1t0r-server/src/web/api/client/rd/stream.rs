@@ -4,7 +4,7 @@ use actix_web::{
     web::{Path, Payload, Query},
 };
 use actix_ws::Message;
-use anyhow::{anyhow, bail};
+use m0n1t0r_common::{NetworkError, ParseError};
 use core::slice;
 use ffmpeg_next::{Packet, Rational, codec, format::Pixel, frame::Video};
 use hbb_common::{
@@ -120,7 +120,7 @@ pub async fn get_mpeg1video(
                 },
                 received = rx.recv() => {
                     let video_frame_proto =
-                        VideoFrame::parse_from_bytes(received?.ok_or(anyhow!("channel closed"))?.as_slice())?;
+                        VideoFrame::parse_from_bytes(received?.ok_or(m0n1t0r_common::Error::Network(NetworkError::ChannelClosed))?.as_slice())?;
                     if let Some(Vp9s(evfs)) = video_frame_proto.union {
                         for evf in evfs.frames {
                             for frame in decoder.decode(&evf.data)? {
@@ -164,13 +164,13 @@ pub async fn get_mpeg1video(
                             }
                         }
                     } else {
-                        bail!("unsupported video frame type");
+                        return Err(m0n1t0r_common::Error::Parse(ParseError::UnsupportedFormat).into());
                     }
                 },
                 _ = canceller.cancelled() => break,
             }
         }
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, Error>(())
     }));
 
     Ok(response)
@@ -211,7 +211,7 @@ pub async fn get_yuv(
                 },
                 received = rx.recv() => {
                     let video_frame =
-                        VideoFrame::parse_from_bytes(received?.ok_or(anyhow!("channel closed"))?.as_slice())?;
+                        VideoFrame::parse_from_bytes(received?.ok_or(m0n1t0r_common::Error::Network(NetworkError::ChannelClosed))?.as_slice())?;
                     if let Some(Vp9s(evfs)) = video_frame.union {
                         for evf in evfs.frames {
                             for frame in decoder.decode(&evf.data)? {
@@ -242,13 +242,13 @@ pub async fn get_yuv(
                             }
                         }
                     } else {
-                        bail!("unsupported video frame type");
+                        return Err(m0n1t0r_common::Error::Parse(ParseError::UnsupportedFormat).into());
                     }
                 },
                 _ = canceller.cancelled() => break,
             }
         }
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, Error>(())
     }));
 
     Ok(response)
@@ -298,7 +298,7 @@ pub async fn get_rgb(
                 },
                 received = rx.recv() => {
                     let video_frame =
-                        VideoFrame::parse_from_bytes(received?.ok_or(anyhow!("channel closed"))?.as_slice())?;
+                        VideoFrame::parse_from_bytes(received?.ok_or(m0n1t0r_common::Error::Network(NetworkError::ChannelClosed))?.as_slice())?;
                     if let Some(frame) = video_frame.union {
                         decoder.handle_video_frame(
                             &frame,
@@ -316,7 +316,7 @@ pub async fn get_rgb(
                 _ = canceller.cancelled() => break,
             }
         }
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, Error>(())
     }));
 
     Ok(response)

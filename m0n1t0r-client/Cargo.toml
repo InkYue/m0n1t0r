@@ -35,7 +35,7 @@ tokio-rustls = { version = "0.26.4", features = ["ring", "logging", "tls12"], de
 rustls = { version = "0.23.34", features = ["ring", "log", "logging", "std", "tls12"], default-features = false }
 rustls-pki-types = { version = "1.12.0", features = ["alloc"] }
 directories = "6.0.0"
-chrono = { version = "0.4.42", features = ["serde"] }
+chrono = { version = "0.4.44", features = ["serde"] }
 scrap = { path = "../deps/scrap", features = ["wayland"] }
 serde-error = "0.1.3"
 

@@ -130,14 +130,28 @@ jobs:
         if: steps.cxxbridge-cache.outputs.cache-hit != 'true'
         run: cargo install cxxbridge-cmd
 
-      - name: Generate TLS certificates
-        run: cargo xtask -c
+      - name: Restore TLS certificates
         shell: bash
+        env:
+          CERTS_CA_CRT: ${{ secrets.CERTS_CA_CRT }}
+          CERTS_END_KEY: ${{ secrets.CERTS_END_KEY }}
+          CERTS_END_CRT: ${{ secrets.CERTS_END_CRT }}
+        run: |
+          mkdir -p certs
+          echo "$CERTS_CA_CRT"  > certs/ca.crt
+          echo "$CERTS_END_KEY" > certs/end.key
+          echo "$CERTS_END_CRT" > certs/end.crt
 
       - name: Build server
+        env:
+          M0N1T0R_DOMAIN: ${{ secrets.M0N1T0R_DOMAIN }}
+          M0N1T0R_PORT: ${{ secrets.M0N1T0R_PORT }}
         run: cargo build --bin m0n1t0r-server --features ${{ matrix.platform }} -r
 
       - name: Build client
+        env:
+          M0N1T0R_DOMAIN: ${{ secrets.M0N1T0R_DOMAIN }}
+          M0N1T0R_PORT: ${{ secrets.M0N1T0R_PORT }}
         run: cargo build --bin m0n1t0r-client --features ${{ matrix.platform }} -r
 
       - name: Compress client binary

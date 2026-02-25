@@ -25,7 +25,7 @@ anyhow = "1.0.100"
 remoc = { version = "0.18.3", features = ["full", "codec-message-pack", "default-codec-message-pack", "rmp-serde"], default-features = false }
 reqwest = { version = "0.13.2", features = ["cookies", "json", "socks"] }
 serde = { version = "1.0.228", features = ["derive"] }
-strum = { version = "0.27.2", features = ["derive"] }
+strum = { version = "0.28.0", features = ["derive"] }
 tokio = { version = "1.48.0", features = ["full"] }
 tokio-util = "0.7.16"
 m0n1t0r-common = { path = "../m0n1t0r-common" }
